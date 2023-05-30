@@ -1,0 +1,213 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Model">
+      <UniqueIdentifier>{cdd34c7b-76f8-4f9d-9ea1-4267f82a4a6e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Model\Headers">
+      <UniqueIdentifier>{12422b16-0800-4789-9298-8510123f21f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Model\Sources">
+      <UniqueIdentifier>{4fd2ad4d-d401-405d-a7b2-53b07bd6034a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{366cbc36-a104-4528-ad31-0373b595a15b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Settings">
+      <UniqueIdentifier>{505e1103-72a6-4d9c-8a40-f60183403e10}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Controller">
+      <UniqueIdentifier>{4d04b897-a3bd-4e38-9b27-7f01b7438467}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Controller\Headers">
+      <UniqueIdentifier>{7b32dc76-c396-4f0e-8d8e-6ed6835c0b8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Controller\Source">
+      <UniqueIdentifier>{83fdf34b-aadf-4109-af19-bb590882f899}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Main">
+      <UniqueIdentifier>{0bddc82b-450c-4be9-8f2b-71a1ee77b74f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Multithread functions">
+      <UniqueIdentifier>{87ffc5b8-01db-433a-b366-52e59d09deea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Imgui">
+      <UniqueIdentifier>{3db0c313-9149-43e1-8e0f-fb399dba0423}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="View">
+      <UniqueIdentifier>{10b59141-abf4-408d-826a-28ea85bf18c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="View\Headers">
+      <UniqueIdentifier>{dcab4ebc-456d-4da4-b171-6133e6f24ba2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="View\Sources">
+      <UniqueIdentifier>{e5862ccd-74f1-4156-8e4e-65dc3183e11c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Glad">
+      <UniqueIdentifier>{43748d2e-2b96-401e-811e-97d0e267ea6e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Defines">
+      <UniqueIdentifier>{7f42302b-34b1-4b4f-b15f-a8ea943f5609}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Multithread functions\Headers">
+      <UniqueIdentifier>{5284b3a2-24c4-494f-8f25-6e641673c275}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Multithread functions\Sources">
+      <UniqueIdentifier>{cf947417-5b0f-4a50-a62a-47ce7da53455}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils\Headers">
+      <UniqueIdentifier>{db3e297b-7b31-4ef4-b367-64365a2a67a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils\Sources">
+      <UniqueIdentifier>{58d7abae-8bac-4d04-b372-c2dfec890bdb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Implot">
+      <UniqueIdentifier>{ab0e6139-5f0f-400b-8366-c13771d182ad}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="bounding_box.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="constraints_buffers.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="cloth.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="cloth_constraints.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="constraints_graph.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="r_tree.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="settings_structures.h">
+      <Filter>Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="simulation_model.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="collider.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="simulation_controller.h">
+      <Filter>Controller\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="simulation_view.h">
+      <Filter>View\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="defines.h">
+      <Filter>Defines</Filter>
+    </ClInclude>
+    <ClInclude Include="check_collisions.h">
+      <Filter>Multithread functions\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="evaluate_constraints.h">
+      <Filter>Multithread functions\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="primitives_ownership_utils.h">
+      <Filter>Utils\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="copy_utils.h">
+      <Filter>Utils\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="indices_utils.h">
+      <Filter>Utils\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="keys_utils.h">
+      <Filter>Utils\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="math_utils.h">
+      <Filter>Utils\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="evaluate_friction.h">
+      <Filter>Multithread functions\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\implot\implot.h">
+      <Filter>Implot</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\implot\implot_internal.h">
+      <Filter>Implot</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="constraints_buffers.cpp">
+      <Filter>Model\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="cloth.cpp">
+      <Filter>Model\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="constraints_graph.cpp">
+      <Filter>Model\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="r_tree.cpp">
+      <Filter>Model\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="collider.cpp">
+      <Filter>Model\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="simulation_model.cpp">
+      <Filter>Model\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="simulation_controller.cpp">
+      <Filter>Controller\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Main</Filter>
+    </ClCompile>
+    <ClCompile Include="simulation_view.cpp">
+      <Filter>View\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_demo.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_draw.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_tables.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\imgui_widgets.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\glad\src\glad.c">
+      <Filter>Glad</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\imgui\backends\imgui_impl_opengl3.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="evaluate_constraints.cpp">
+      <Filter>Multithread functions\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="primitives_ownership_utils.cpp">
+      <Filter>Utils\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="math_utils.cpp">
+      <Filter>Utils\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="check_collisions.cpp">
+      <Filter>Multithread functions\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="evaluate_friction.cpp">
+      <Filter>Multithread functions\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\implot\implot.cpp">
+      <Filter>Implot</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\implot\implot_demo.cpp">
+      <Filter>Implot</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\implot\implot_items.cpp">
+      <Filter>Implot</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
