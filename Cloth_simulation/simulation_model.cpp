@@ -7,10 +7,6 @@
 #include "evaluate_constraints.h"
 #include "evaluate_friction.h"
 
-#ifdef MEASURE_TIME
-#include <chrono>
-#endif
-
 std::vector<std::vector<KeysUtils::ConstraintKey>> SimulationModel::addFixedVertex(const std::vector<FixedVertexTask>& tasks)
 {
 	if (tasks.empty())
@@ -103,7 +99,7 @@ std::vector<std::vector<KeysUtils::ConstraintKey>> SimulationModel::addFixedAngl
 
 		// get vertices original constraint affected to
 		const uint32_t* start_ptr = internal_constraints.getConstraintVertices(original_constraint_id);
-		original_constraint_vertices = { start_ptr, start_ptr + CONSTRAINT_VERTICES_COUNT[(int)original_constraint_type] };
+		original_constraint_vertices = { start_ptr, start_ptr + CONSTRAINT_UINT_COUNT[(int)original_constraint_type] };
 		m_cloth.replacePhantomsWithOriginals(original_constraint_vertices);
 		if (original_constraint_type == ConstraintType::REALISTIC_BEND)
 		{
@@ -134,7 +130,7 @@ std::vector<std::vector<KeysUtils::ConstraintKey>> SimulationModel::addSewing(co
 	std::vector<std::vector<KeysUtils::ConstraintKey>> keys;
 	keys.reserve(tasks.size());
 	int constraint_id = m_user_defined_constraints.getConstraintsCount();
-	std::vector<uint32_t> constraint_vertices(CONSTRAINT_VERTICES_COUNT[(size_t)ConstraintType::SEW_VERTICES]);
+	std::vector<uint32_t> constraint_vertices(CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::SEW_VERTICES]);
 
 	for (const auto& task : tasks)
 	{
@@ -154,42 +150,54 @@ std::vector<std::vector<KeysUtils::ConstraintKey>> SimulationModel::addSewing(co
 
 const ExecutionStatistic& SimulationModel::simulationStep(float time_delta)
 {
-	const float max_movement = evaluateExternalForces(time_delta);
 
-#ifdef MEASURE_TIME
-	auto begin = std::chrono::high_resolution_clock::now();
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_start_time = std::chrono::high_resolution_clock::now();
 #endif
 
-	generateRTree(max_movement);
+	m_max_movement = evaluateExternalForces(time_delta);
 
-#ifdef MEASURE_TIME
-	auto end = std::chrono::high_resolution_clock::now();
-	m_statistic.m_rtree_creation_time = (uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-	begin = std::chrono::high_resolution_clock::now();
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_end_time = std::chrono::high_resolution_clock::now();
+	m_statistic.m_evaluate_forces_time =
+		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+	m_start_time = m_end_time;
+#endif
+
+	generateRTree(m_max_movement);
+
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_end_time = std::chrono::high_resolution_clock::now();
+	m_statistic.m_rtree_creation_time =
+		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+	m_start_time = m_end_time;
 #endif
 
 	findCollisionsCandidates();
 
-#ifdef MEASURE_TIME
-	end = std::chrono::high_resolution_clock::now();
-	m_statistic.m_find_collisions_candidates_time = (uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-	begin = std::chrono::high_resolution_clock::now();
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_end_time = std::chrono::high_resolution_clock::now();
+	m_statistic.m_find_collisions_candidates_time =
+		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+	m_start_time = m_end_time;
 #endif
 
-	checkCollisionsCandidates(max_movement);
+	checkCollisionsCandidates(m_max_movement);
 
-#ifdef MEASURE_TIME
-	end = std::chrono::high_resolution_clock::now();
-	m_statistic.m_check_collisions_candidates_time = (uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-	begin = std::chrono::high_resolution_clock::now();
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_end_time = std::chrono::high_resolution_clock::now();
+	m_statistic.m_check_collisions_candidates_time =
+		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+	m_start_time = m_end_time;
 #endif
 
 	m_collisions_constraints_graph.setConstraints(m_collisions_constraints, m_cloth.getRealVerticesCount());
 
-#ifdef MEASURE_TIME
-	end = std::chrono::high_resolution_clock::now();
-	m_statistic.m_collisions_constraints_graph_time = (uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-	begin = std::chrono::high_resolution_clock::now();
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_end_time = std::chrono::high_resolution_clock::now();
+	m_statistic.m_collisions_constraints_graph_time =
+		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+	m_start_time = m_end_time;
 #endif
 
 	if (m_user_defined_constraints_changed)
@@ -198,28 +206,38 @@ const ExecutionStatistic& SimulationModel::simulationStep(float time_delta)
 		m_user_defined_constraints_changed = false;
 	}
 
-#ifdef MEASURE_TIME
-	end = std::chrono::high_resolution_clock::now();
-	m_statistic.m_user_constraints_graph_time = (uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-	begin = std::chrono::high_resolution_clock::now();
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_end_time = std::chrono::high_resolution_clock::now();
+	m_statistic.m_user_constraints_graph_time =
+		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+	m_start_time = m_end_time;
 #endif
 
 	evaluateConstraints(time_delta);
 
-#ifdef MEASURE_TIME
-	end = std::chrono::high_resolution_clock::now();
-	m_statistic.m_evaluate_constraints_time = (uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-	begin = std::chrono::high_resolution_clock::now();
-#endif
-
-	evaluateFriction(time_delta);
-
-#ifdef MEASURE_TIME
-	end = std::chrono::high_resolution_clock::now();
-	m_statistic.m_evaluate_friction_time = (uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_end_time = std::chrono::high_resolution_clock::now();
+	m_statistic.m_evaluate_constraints_time =
+		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+	m_start_time = m_end_time;
 #endif
 
 	updatePositionsAndSpeeds(time_delta);
+
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_end_time = std::chrono::high_resolution_clock::now();
+	m_statistic.m_update_positions_and_speeds_time =
+		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+	m_start_time = m_end_time;
+#endif
+
+	m_cloth.updateNormals();
+
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_end_time = std::chrono::high_resolution_clock::now();
+	m_statistic.m_update_normals_time =
+		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+#endif
 
 	m_statistic.m_internal_constraints_count = (uint32_t)m_cloth.getInternalConstraintsCount();
 	m_statistic.m_phantom_constraints_count = (uint32_t)m_cloth_constraints_graph.getPhantomConstraintsCount();
@@ -231,9 +249,9 @@ const ExecutionStatistic& SimulationModel::simulationStep(float time_delta)
 
 float SimulationModel::evaluateExternalForces(float time_delta)
 {
-	const std::vector<glm::vec3>& coords = m_cloth.getCoords();
-	std::vector<glm::vec3>& test_coords = m_cloth.getTestCoords();
-	const std::vector<glm::vec3> speeds = m_cloth.getSpeeds();
+	const AlignedVector<glm::vec3>& coords = m_cloth.getCoords();
+	AlignedVector<glm::vec3>& test_coords = m_cloth.getTestCoords();
+	const AlignedVector<glm::vec3> speeds = m_cloth.getSpeeds();
 
 	const float gravity_movement = -time_delta * time_delta * m_settings.m_gravity;
 
@@ -331,7 +349,7 @@ void SimulationModel::createSelfCollisionCandidates(const std::array<int, 2>& tr
 		m_cloth.getTrianglePrimitivesOwnership(triangles[1]);
 
 	// here we try to create 6 vertex-triangle collisions candidates
-	constexpr int data_array_size = CONSTRAINT_DATA_COUNT[(size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE];
+	constexpr int data_array_size = CONSTRAINT_FLOAT_COUNT[(size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE];
 	for (int vertex_id = 0; vertex_id < 3; ++vertex_id)
 	{
 		// SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE: 1 - vertex, 1 - triangle, 2 - zeros
@@ -351,7 +369,7 @@ void SimulationModel::createSelfCollisionCandidates(const std::array<int, 2>& tr
 	}
 
 	// here we try to create 9 edge-edge constraints
-	constexpr int data_array_size_2 = CONSTRAINT_DATA_COUNT[(size_t)ConstraintType::SELF_EDGE_EDGE_COLLISION_CANDIDATE];
+	constexpr int data_array_size_2 = CONSTRAINT_FLOAT_COUNT[(size_t)ConstraintType::SELF_EDGE_EDGE_COLLISION_CANDIDATE];
 	for (uint8_t triangle_a_edge_index = 0; triangle_a_edge_index < 3; ++triangle_a_edge_index)
 	{
 		for (uint8_t triangle_b_edge_index = 0; triangle_b_edge_index < 3; ++triangle_b_edge_index)
@@ -381,7 +399,7 @@ void SimulationModel::createColliderCollisionCandidate(int cloth_triangle_id, in
 		m_collider.getTrianglePrimitivesOwnership(collider_triangle_id);
 
 	// here we try to create 3 vertex-triangle collisions
-	constexpr int data_array_size = CONSTRAINT_DATA_COUNT[(size_t)ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION_CANDIDATE];
+	constexpr int data_array_size = CONSTRAINT_FLOAT_COUNT[(size_t)ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION_CANDIDATE];
 	for (int vertex_id = 0; vertex_id < 3; ++vertex_id)
 	{
 		if (PrimitivesOwnershipUtils::triangleOwnsTheVertex(vertex_id, cloth_triangle_primitives_ownership))
@@ -393,7 +411,7 @@ void SimulationModel::createColliderCollisionCandidate(int cloth_triangle_id, in
 	}
 
 	// here we try to create 9 edge-edge constraints
-	constexpr int data_array_size_2 = CONSTRAINT_DATA_COUNT[(size_t)ConstraintType::COLLIDER_EDGE_EDGE_COLLISION_CANDIDATE];
+	constexpr int data_array_size_2 = CONSTRAINT_FLOAT_COUNT[(size_t)ConstraintType::COLLIDER_EDGE_EDGE_COLLISION_CANDIDATE];
 	for (int cloth_triangle_edge = 0; cloth_triangle_edge < 3; ++cloth_triangle_edge)
 	{
 		for (int object_triangle_edge = 0; object_triangle_edge < 3; ++object_triangle_edge)
@@ -411,46 +429,35 @@ void SimulationModel::createColliderCollisionCandidate(int cloth_triangle_id, in
 
 void SimulationModel::checkCollisionsCandidates(float max_movement)
 {
-	const std::vector<int>* candidates = &m_collisions_candidates[(size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE];
-
-	omp_set_dynamic(0);
-	omp_set_num_threads(m_settings.m_check_collisions_threads_count);
-
 	const float self_collision_critical_distance = std::min(max_movement, m_settings.m_max_collision_radius_for_cloth);
 	const float collider_collision_critical_distance = std::min(max_movement, m_settings.m_max_collision_radius_for_colliders);
 
-#pragma omp parallel for
-	for (int i = 0; i < candidates->size(); ++i)
-	{
-		CheckCollisionsMultithreaded::checkSelfVertexTriangleCollision(m_cloth, m_collisions_constraints, self_collision_critical_distance, (*candidates)[i]);
-	}
+	// we can use 
+	// candidates = &m_collisions_candidates[(size_t)ConstraintType::...];
+	// to get tasks of specific type and remove switch, but it is not good for CPU version
 
-	candidates = &m_collisions_candidates[(size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_BETWEEN_LAYERS_CANDIDATE];
 #pragma omp parallel for
-	for (int i = 0; i < candidates->size(); ++i)
+	for (int i = 0; i < m_collisions_constraints.getConstraintsCount(); ++i)
 	{
-		CheckCollisionsMultithreaded::checkSelfVertexTriangleCollision(m_cloth, m_collisions_constraints, self_collision_critical_distance, (*candidates)[i]);
-	}
-
-	candidates = &m_collisions_candidates[(size_t)ConstraintType::SELF_EDGE_EDGE_COLLISION_CANDIDATE];
-#pragma omp parallel for
-	for (int i = 0; i < candidates->size(); ++i)
-	{
-		CheckCollisionsMultithreaded::checkSelfEdgeEdgeCollision(m_cloth, m_collisions_constraints, self_collision_critical_distance, (*candidates)[i]);
-	}
-
-	candidates = &m_collisions_candidates[(size_t)ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION_CANDIDATE];
-#pragma omp parallel for
-	for (int i = 0; i < candidates->size(); ++i)
-	{
-		CheckCollisionsMultithreaded::checkColliderVertexTriangleCollision(m_cloth, m_collisions_constraints, m_collider, collider_collision_critical_distance, (*candidates)[i]);
-	}
-
-	candidates = &m_collisions_candidates[(size_t)ConstraintType::COLLIDER_EDGE_EDGE_COLLISION_CANDIDATE];
-#pragma omp parallel for
-	for (int i = 0; i < candidates->size(); ++i)
-	{
-		CheckCollisionsMultithreaded::checkColliderEdgeEdgeCollision(m_cloth, m_collisions_constraints, m_collider, collider_collision_critical_distance, (*candidates)[i]);
+		switch (m_collisions_constraints.getConstraintType(i))
+		{
+		case ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE:
+		case ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_BETWEEN_LAYERS_CANDIDATE:
+			CheckCollisionsMultithreaded::checkSelfVertexTriangleCollision(m_cloth, m_collisions_constraints, self_collision_critical_distance, i);
+			break;
+		case ConstraintType::SELF_EDGE_EDGE_COLLISION_CANDIDATE:
+			CheckCollisionsMultithreaded::checkSelfEdgeEdgeCollision(m_cloth, m_collisions_constraints, self_collision_critical_distance, i);
+			break;
+		case ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION_CANDIDATE:
+			CheckCollisionsMultithreaded::checkColliderVertexTriangleCollision(m_cloth, m_collisions_constraints, m_collider, collider_collision_critical_distance, i);
+			break;
+		case ConstraintType::COLLIDER_EDGE_EDGE_COLLISION_CANDIDATE:
+			CheckCollisionsMultithreaded::checkColliderEdgeEdgeCollision(m_cloth, m_collisions_constraints, m_collider, collider_collision_critical_distance, i);
+			break;
+		default:
+			throw std::exception("Wrong constraint type!");
+			break;
+		}
 	}
 
 	replaceCandidatesWithRealCollisions();
@@ -477,177 +484,190 @@ void SimulationModel::replaceCandidatesWithRealCollisions()
 
 void SimulationModel::evaluateConstraints(float time_delta)
 {
-	const float alpha_correction_coeff = 1.0f / (time_delta * time_delta);
-
-	const ConstraintsBuffers& cloth_tasks = m_cloth.getInternalConstraints();
-	const ConstraintsBuffers& collisions_tasks = m_collisions_constraints;
-	const ConstraintsBuffers& user_tasks = m_user_defined_constraints;
-
-	const TasksMap& cloth_tasks_map = m_cloth_constraints_graph.getTasksMap();
-	const TasksMap& collisions_tasks_map = m_collisions_constraints_graph.getTasksMap();
-	const TasksMap& user_tasks_map = m_user_defined_constraints_graph.getTasksMap();
-
-	const std::vector<int>* tasks = nullptr;
-
-	for (int iteration = 0; iteration < m_settings.m_iterations_count; ++iteration)
+#pragma omp parallel
 	{
-		omp_set_dynamic(0);
-		omp_set_num_threads(m_settings.m_internal_constraints_threads_count);
+		const float alpha_correction_coeff = 1.0f / (time_delta * time_delta);
 
-		// internal constraints
-		for (int partition = 0; partition < cloth_tasks_map.getPartitionsCount() - 1; ++partition)
+		for (int iteration = 0; iteration < m_settings.m_iterations_count; ++iteration)
 		{
-			tasks = &cloth_tasks_map.getTasks(partition, (size_t)ConstraintType::STRETCH);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
+			evaluateInternalConstraints(alpha_correction_coeff, iteration);
+
+#pragma omp single
 			{
-				EvaluateConstraintsMultithread::evaluateStretch(m_cloth, alpha_correction_coeff, iteration, (*tasks)[i]);
+				m_cloth.syncOriginalsVertices();
 			}
 
-			tasks = &cloth_tasks_map.getTasks(partition, (size_t)ConstraintType::REALISTIC_STRETCH);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
+			evaluateCollisionConstraints(alpha_correction_coeff, iteration);
+
+			evaluateUserConstraints(alpha_correction_coeff, iteration);
+
+#pragma omp single
 			{
-				EvaluateConstraintsMultithread::evaluateRealisticStretch(m_cloth, alpha_correction_coeff, iteration, (*tasks)[i]);
-			}
-
-			tasks = &cloth_tasks_map.getTasks(partition, (size_t)ConstraintType::BEND);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
-			{
-				if (cloth_tasks.getIsDisabled((*tasks)[i]))
-				{
-					continue;
-				}
-
-				EvaluateConstraintsMultithread::evaluateBending(m_cloth, alpha_correction_coeff, iteration, (*tasks)[i]);
-			}
-
-			tasks = &cloth_tasks_map.getTasks(partition, (size_t)ConstraintType::REALISTIC_BEND);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
-			{
-				if (cloth_tasks.getIsDisabled((*tasks)[i]))
-				{
-					continue;
-				}
-
-				EvaluateConstraintsMultithread::evaluateRealisticBending(m_cloth, alpha_correction_coeff, iteration, (*tasks)[i]);
+				m_cloth.syncPhantomVertices();
 			}
 		}
 
-		// phantom constraints
-		tasks = &cloth_tasks_map.getTasks(cloth_tasks_map.getPartitionsCount() - 1, (size_t)ConstraintType::PHANTOM_VERTICES);
-#pragma omp parallel for
+		evaluateFriction(time_delta);
+	}
+}
+
+void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, int iteration)
+{
+	const int thread_id = omp_get_thread_num();
+
+	const std::vector<int>* tasks = nullptr;
+	const ConstraintsBuffers& buffer = m_cloth.getInternalConstraints();
+	const TasksMap& tasks_map = m_cloth_constraints_graph.getTasksMap();
+
+	for (int partition = 0; partition < tasks_map.getPartitionsCount() - 1; ++partition)
+	{
+		tasks = &tasks_map.getTasks(partition);
+		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
+		{
+			switch (buffer.getConstraintType((*tasks)[i]))
+			{
+			case ConstraintType::STRETCH:
+				EvaluateConstraintsMultithread::evaluateStretch(m_cloth, alpha_correction_coeff, iteration, (*tasks)[i]);
+				break;
+			case ConstraintType::REALISTIC_STRETCH:
+				EvaluateConstraintsMultithread::evaluateRealisticStretch(m_cloth, alpha_correction_coeff, iteration, (*tasks)[i]);
+				break;
+			case ConstraintType::BEND:
+				if (!buffer.getIsDisabled((*tasks)[i]))
+				{
+					EvaluateConstraintsMultithread::evaluateBending(m_cloth, alpha_correction_coeff, iteration, (*tasks)[i]);
+				}
+				break;
+			case ConstraintType::REALISTIC_BEND:
+				if (!buffer.getIsDisabled((*tasks)[i]))
+				{
+					EvaluateConstraintsMultithread::evaluateRealisticBending(m_cloth, alpha_correction_coeff, iteration, (*tasks)[i]);
+				}
+				break;
+			default:
+				throw std::exception("Wrong constraint type");
+			}
+		}
+
+#pragma omp barrier
+	}
+
+#pragma omp single
+	{
+		tasks = &tasks_map.getTasks(tasks_map.getPartitionsCount() - 1);
 		for (int i = 0; i < tasks->size(); ++i)
 		{
 			EvaluateConstraintsMultithread::evaluatePhantom(m_cloth, m_cloth_constraints_graph.getPhantomConstraints(), (*tasks)[i]);
 		}
+	}
+}
 
-		m_cloth.syncOriginalsVertices();
+void SimulationModel::evaluateCollisionConstraints(float alpha_correction_coeff, int iteration)
+{
+	const int thread_id = omp_get_thread_num();
 
-		omp_set_dynamic(0);
-		omp_set_num_threads(m_settings.m_other_constraints_threads_count);
+	const std::vector<int>* tasks = nullptr;
+	const ConstraintsBuffers& buffer = m_collisions_constraints;
+	const TasksMap& tasks_map = m_collisions_constraints_graph.getTasksMap();
 
-		// collisions constraints
-		for (int partition = 0; partition < collisions_tasks_map.getPartitionsCount(); ++partition)
+	for (int partition = 0; partition < tasks_map.getPartitionsCount(); ++partition)
+	{
+		tasks = &tasks_map.getTasks(partition);
+		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
 		{
-			tasks = &collisions_tasks_map.getTasks(partition, (size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
+			switch (buffer.getConstraintType((*tasks)[i]))
 			{
+			case ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION:
 				EvaluateConstraintsMultithread::evaluateSelfVertexTriangleCollision(m_cloth, m_collisions_constraints, (*tasks)[i]);
-			}
-
-			tasks = &collisions_tasks_map.getTasks(partition, (size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_BETWEEN_LAYERS);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
-			{
+				break;
+			case ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_BETWEEN_LAYERS:
 				EvaluateConstraintsMultithread::evaluateSelfVertexTriangleCollisionBetweenLayers(m_cloth, m_collisions_constraints, (*tasks)[i]);
-			}
-
-			tasks = &collisions_tasks_map.getTasks(partition, (size_t)ConstraintType::SELF_EDGE_EDGE_COLLISION);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
-			{
+				break;
+			case ConstraintType::SELF_EDGE_EDGE_COLLISION:
 				EvaluateConstraintsMultithread::evaluateSelfEdgeEdgeCollision(m_cloth, m_collisions_constraints, (*tasks)[i]);
-			}
-
-			tasks = &collisions_tasks_map.getTasks(partition, (size_t)ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
-			{
+				break;
+			case ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION:
 				EvaluateConstraintsMultithread::evaluateColliderVertexTriangleCollision(m_cloth, m_collider, m_collisions_constraints, (*tasks)[i]);
-			}
-
-			tasks = &collisions_tasks_map.getTasks(partition, (size_t)ConstraintType::COLLIDER_EDGE_EDGE_COLLISION);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
-			{
+				break;
+			case ConstraintType::COLLIDER_EDGE_EDGE_COLLISION:
 				EvaluateConstraintsMultithread::evaluateColliderEdgeEdgeCollision(m_cloth, m_collider, m_collisions_constraints, (*tasks)[i]);
+				break;
+			default:
+				throw std::exception("Wrong constraint type");
+				break;
 			}
 		}
 
-		// user defined constraints
-		for (int partition = 0; partition < user_tasks_map.getPartitionsCount(); ++partition)
+#pragma omp barrier
+	}
+}
+
+void SimulationModel::evaluateUserConstraints(float alpha_correction_coeff, int iteration)
+{
+	const int thread_id = omp_get_thread_num();
+
+	const std::vector<int>* tasks = nullptr;
+	const ConstraintsBuffers& buffer = m_user_defined_constraints;
+	const TasksMap& tasks_map = m_user_defined_constraints_graph.getTasksMap();
+
+	for (int partition = 0; partition < tasks_map.getPartitionsCount(); ++partition)
+	{
+		tasks = &tasks_map.getTasks(partition);
+		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
 		{
-			tasks = &user_tasks_map.getTasks(partition, (size_t)ConstraintType::SEW_VERTICES);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
+			switch (buffer.getConstraintType((*tasks)[i]))
 			{
+			case ConstraintType::SEW_VERTICES:
 				EvaluateConstraintsMultithread::evaluateSewing(m_cloth, m_user_defined_constraints, alpha_correction_coeff, i, (*tasks)[i]);
-			}
-
-			tasks = &user_tasks_map.getTasks(partition, (size_t)ConstraintType::FIXED_POSITION);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
-			{
+				break;
+			case ConstraintType::FIXED_POSITION:
 				EvaluateConstraintsMultithread::evaluateFixedPosition(m_cloth, m_user_defined_constraints, (*tasks)[i]);
-			}
-
-			tasks = &user_tasks_map.getTasks(partition, (size_t)ConstraintType::FIXED_ANGLE);
-#pragma omp parallel for
-			for (int i = 0; i < tasks->size(); ++i)
-			{
+				break;
+			case ConstraintType::FIXED_ANGLE:
 				EvaluateConstraintsMultithread::evaluateFixedAngle(m_cloth, m_user_defined_constraints, alpha_correction_coeff, i, (*tasks)[i]);
+				break;
+			default:
+				throw std::exception("Wrong constraint type");
+				break;
 			}
 		}
 
-		m_cloth.syncPhantomVertices();
+#pragma omp barrier
 	}
 }
 
 void SimulationModel::evaluateFriction(float time_delta)
 {
-	const TasksMap& collisions_tasks_map = m_collisions_constraints_graph.getTasksMap();
+	const int thread_id = omp_get_thread_num();
+
 	const std::vector<int>* tasks = nullptr;
+	const ConstraintsBuffers& buffer = m_collisions_constraints;
+	const TasksMap& tasks_map = m_collisions_constraints_graph.getTasksMap();
 
-	omp_set_dynamic(0);
-	omp_set_num_threads(m_settings.m_other_constraints_threads_count);
-
-	// collisions constraints
-	for (int partition = 0; partition < collisions_tasks_map.getPartitionsCount(); ++partition)
+	for (int partition = 0; partition < tasks_map.getPartitionsCount(); ++partition)
 	{
-		tasks = &collisions_tasks_map.getTasks(partition, (size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION);
-#pragma omp parallel for
-		for (int i = 0; i < tasks->size(); ++i)
+		tasks = &tasks_map.getTasks(partition);
+		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
 		{
-			EvaluateFrictionMultithreaded::evaluateSelfFriction(m_cloth, m_collisions_constraints, (*tasks)[i], time_delta);
+			switch (buffer.getConstraintType((*tasks)[i]))
+			{
+			case ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION:
+			case ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_BETWEEN_LAYERS:
+				EvaluateFrictionMultithreaded::evaluateSelfFriction(m_cloth, buffer, (*tasks)[i], time_delta);
+				break;
+			case ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION:
+				EvaluateFrictionMultithreaded::evaluateColliderFriction(m_cloth, m_collider, buffer, (*tasks)[i], time_delta);
+				break;
+			case ConstraintType::SELF_EDGE_EDGE_COLLISION:
+			case ConstraintType::COLLIDER_EDGE_EDGE_COLLISION:
+				break;
+			default:
+				throw std::exception("Wrong constraint type");
+				break;
+			}
 		}
 
-		tasks = &collisions_tasks_map.getTasks(partition, (size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_BETWEEN_LAYERS);
-#pragma omp parallel for
-		for (int i = 0; i < tasks->size(); ++i)
-		{
-			EvaluateFrictionMultithreaded::evaluateSelfFriction(m_cloth, m_collisions_constraints, (*tasks)[i], time_delta);
-		}
-
-		tasks = &collisions_tasks_map.getTasks(partition, (size_t)ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION);
-#pragma omp parallel for
-		for (int i = 0; i < tasks->size(); ++i)
-		{
-			EvaluateFrictionMultithreaded::evaluateColliderFriction(m_cloth, m_collider, m_collisions_constraints, (*tasks)[i], time_delta);
-		}
+#pragma omp barrier
 	}
 }
 
@@ -658,9 +678,9 @@ void SimulationModel::updatePositionsAndSpeeds(float time_delta)
 
 	// update vertices speeds
 	const float speeds_coefficient = m_settings.m_speed_damping_coefficient / time_delta;
-	std::vector<glm::vec3>& coords = m_cloth.getCoords();
-	std::vector<glm::vec3>& test_coords = m_cloth.getTestCoords();
-	std::vector<glm::vec3>& speeds = m_cloth.getSpeeds();
+	AlignedVector<glm::vec3>& coords = m_cloth.getCoords();
+	AlignedVector<glm::vec3>& test_coords = m_cloth.getTestCoords();
+	AlignedVector<glm::vec3>& speeds = m_cloth.getSpeeds();
 
 	m_cloth.syncSlaveVertices();
 
@@ -670,6 +690,4 @@ void SimulationModel::updatePositionsAndSpeeds(float time_delta)
 	}
 
 	std::swap(coords, test_coords);
-
-	m_cloth.updateNormals();
 }

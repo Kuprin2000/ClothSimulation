@@ -106,7 +106,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\imgui;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <OpenMPSupport>false</OpenMPSupport>
+      <OpenMPSupport>true</OpenMPSupport>
       <FloatingPointModel>Strict</FloatingPointModel>
       <FloatingPointExceptions>true</FloatingPointExceptions>
     </ClCompile>
@@ -129,6 +129,8 @@
       <AdditionalIncludeDirectories>C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\imgui;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <FloatingPointModel>Precise</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,6 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="aligned_vector.h" />
     <ClInclude Include="bounding_box.h" />
     <ClInclude Include="check_collisions.h" />
     <ClInclude Include="collider.h" />
@@ -166,7 +169,6 @@
   <ItemGroup>
     <ClCompile Include="check_collisions.cpp" />
     <ClCompile Include="collider.cpp" />
-    <ClCompile Include="constraints_buffers.cpp" />
     <ClCompile Include="cloth.cpp" />
     <ClCompile Include="constraints_graph.cpp" />
     <ClCompile Include="evaluate_constraints.cpp" />

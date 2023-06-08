@@ -19,9 +19,7 @@ public:
 			}
 		}
 
-		m_constraints_type = &constraints.getConstraintTypes();
-		m_constraints_vertices_offsets = &constraints.getVerticesOffsets();
-		m_constraints_vertices = &constraints.getVertices();
+		m_constraints_buffer = &constraints;
 		m_constraints_neighbors.resize(m_enabled_constraints.size(), {});
 		m_constraints_color.resize(m_enabled_constraints.size(), NO_COLOR);
 		m_constraints_counter.resize(m_enabled_constraints.size(), 0);
@@ -38,17 +36,17 @@ public:
 		return m_enabled_constraints[index];
 	}
 
-	_NODISCARD uint8_t getType(int index) const
+	_NODISCARD uint8_t getEnabledConstraintType(int index) const
 	{
-		return (*m_constraints_type)[m_enabled_constraints[index]];
+		return (uint8_t)m_constraints_buffer->getConstraintType(m_enabled_constraints[index]);
 	}
 
-	_NODISCARD std::array<int, CONSTRAINT_TYPES_COUNT> countNodesPerType() const
+	_NODISCARD std::array<int, CONSTRAINT_TYPES_COUNT> countEnabledConstraintsPerType() const
 	{
 		std::array<int, CONSTRAINT_TYPES_COUNT> result = { 0 };
 		for (int i = 0; i < m_enabled_constraints.size(); ++i)
 		{
-			++result[(*m_constraints_type)[m_enabled_constraints[i]]];
+			++result[(uint8_t)m_constraints_buffer->getConstraintType(m_enabled_constraints[i])];
 		}
 
 		return result;
@@ -104,14 +102,14 @@ public:
 		m_constraints_neighbors[index].clear();
 	}
 
-	_NODISCARD const uint32_t* getVertices(int index) const
+	_NODISCARD const uint32_t* getEnabledConstraintVertices(int index) const
 	{
-		return m_constraints_vertices->data() + (*m_constraints_vertices_offsets)[m_enabled_constraints[index]];
+		return m_constraints_buffer->getConstraintVertices(m_enabled_constraints[index]);
 	}
 
-	_NODISCARD uint32_t* getVertices(int index)
+	_NODISCARD uint32_t* getEnabledConstraintVertices(int index)
 	{
-		return m_constraints_vertices->data() + (*m_constraints_vertices_offsets)[m_enabled_constraints[index]];
+		return m_constraints_buffer->getConstraintVertices(m_enabled_constraints[index]);
 	}
 
 	_NODISCARD const std::set<int>& getNeighbors(int index) const
@@ -122,9 +120,7 @@ public:
 	void clear()
 	{
 		m_enabled_constraints.clear();
-		m_constraints_type = nullptr;
-		m_constraints_vertices_offsets = nullptr;
-		m_constraints_vertices = nullptr;
+		m_constraints_buffer = nullptr;
 		m_constraints_neighbors.clear();
 		m_constraints_color.clear();
 		m_constraints_counter.clear();
@@ -133,9 +129,7 @@ public:
 
 private:
 	std::vector<int> m_enabled_constraints;
-	const std::vector<uint8_t>* m_constraints_type = nullptr;
-	const std::vector<uint32_t>* m_constraints_vertices_offsets = nullptr;
-	std::vector<uint32_t>* m_constraints_vertices = nullptr;
+	ConstraintsBuffers* m_constraints_buffer = nullptr;
 	std::vector<std::set<int>> m_constraints_neighbors;
 	std::vector<int8_t> m_constraints_color;
 	std::vector<int> m_constraints_counter;
@@ -148,27 +142,27 @@ public:
 	void reserve(int partitions_count)
 	{
 		clear();
-		m_data.resize((size_t)partitions_count * (size_t)CONSTRAINT_TYPES_COUNT, {});
+		m_data.resize((size_t)partitions_count, {});
 	}
 
-	void pushTask(int task_id, int partition_id, int constraint_type)
+	void pushTask(int task_id, int partition_id)
 	{
-		m_data[(size_t)partition_id * (size_t)CONSTRAINT_TYPES_COUNT + (size_t)constraint_type].push_back(task_id);
+		m_data[(size_t)partition_id].push_back(task_id);
 	}
 
-	_NODISCARD const std::vector<int>& getTasks(int partition_id, int constraint_type) const
+	_NODISCARD const std::vector<int>& getTasks(int partition_id) const
 	{
-		return m_data[(size_t)partition_id * (size_t)CONSTRAINT_TYPES_COUNT + (size_t)constraint_type];
+		return m_data[(size_t)partition_id];
 	}
 
 	_NODISCARD int getPartitionsCount() const
 	{
-		return (int)m_data.size() / CONSTRAINT_TYPES_COUNT;
+		return (int)m_data.size();
 	}
 
-	_NODISCARD int getTasksCount(int partition_id, int constraint_type) const
+	_NODISCARD int getTasksCount(int partition_id) const
 	{
-		return (int)m_data[(size_t)partition_id * (size_t)CONSTRAINT_TYPES_COUNT + (size_t)constraint_type].size();
+		return (int)m_data[(size_t)partition_id].size();
 	}
 
 	void clear()

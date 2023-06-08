@@ -5,7 +5,7 @@
 #include "primitives_ownership_utils.h"
 #include <array>
 
-std::vector<uint8_t> PrimitivesOwnershipUtils::generatePrimitivesOwnership(const std::vector<glm::uvec3>& indices)
+AlignedVector<uint8_t> PrimitivesOwnershipUtils::generatePrimitivesOwnership(const AlignedVector<glm::uvec3>& indices)
 {
 	// Here we setup data on what primitives (vertices and edges) each triangle owns.
 	// Triangle can own some of it's vertices and some of it's edges. Each vertex and
@@ -19,7 +19,7 @@ std::vector<uint8_t> PrimitivesOwnershipUtils::generatePrimitivesOwnership(const
 	std::set<std::array<uint32_t, 2>> owned_edges;
 
 	// result array
-	std::vector<uint8_t> result((int)indices.size());
+	AlignedVector<uint8_t> result((int)indices.size());
 
 	// bitmask for triangle
 	TrianglePrimitivesOwnership owned_primitives;

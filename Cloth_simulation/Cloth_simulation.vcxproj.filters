@@ -132,11 +132,11 @@
     <ClInclude Include="libs\implot\implot_internal.h">
       <Filter>Implot</Filter>
     </ClInclude>
+    <ClInclude Include="aligned_vector.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="constraints_buffers.cpp">
-      <Filter>Model\Sources</Filter>
-    </ClCompile>
     <ClCompile Include="cloth.cpp">
       <Filter>Model\Sources</Filter>
     </ClCompile>

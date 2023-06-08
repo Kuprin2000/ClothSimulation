@@ -3,7 +3,6 @@
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
 #include "simulation_controller.h"
-#include <Windows.h>
 #include <fstream>
 #include <filesystem>
 #include <limits>
@@ -15,7 +14,11 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "collider.h"
 
+#ifdef PERFORMANCE_TEST
+constexpr int STATISTIC_SIZE = FRAMES_COUNT;
+#else
 constexpr int STATISTIC_SIZE = 300;
+#endif
 int STATISTIC_INDEX = 0;
 
 SimulationController::SimulationController(SimulationModel* model, SimulationView* view) : m_model(model), m_view(view)
@@ -44,14 +47,16 @@ SimulationController::SimulationController(SimulationModel* model, SimulationVie
 
 	m_statistic.m_framerate.resize(STATISTIC_SIZE, 0u);
 
-#ifdef MEASURE_TIME
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_statistic.m_evaluate_forces_time.resize(STATISTIC_SIZE, 0u);
 	m_statistic.m_rtree_creation_time.resize(STATISTIC_SIZE, 0u);
 	m_statistic.m_find_collisions_candidates_time.resize(STATISTIC_SIZE, 0u);
 	m_statistic.m_check_collisions_candidates_time.resize(STATISTIC_SIZE, 0u);
 	m_statistic.m_collisions_constraints_graph_time.resize(STATISTIC_SIZE, 0u);
 	m_statistic.m_user_constraints_graph_time.resize(STATISTIC_SIZE, 0u);
 	m_statistic.m_evaluate_constraints_time.resize(STATISTIC_SIZE, 0u);
-	m_statistic.m_evaluate_friction_time.resize(STATISTIC_SIZE, 0u);
+	m_statistic.m_update_positions_and_speeds_time.resize(STATISTIC_SIZE, 0u);
+	m_statistic.m_update_normals_time.resize(STATISTIC_SIZE, 0u);
 #endif
 
 	m_statistic.m_collision_constraints_count.resize(STATISTIC_SIZE, 0u);
@@ -59,25 +64,23 @@ SimulationController::SimulationController(SimulationModel* model, SimulationVie
 
 void SimulationController::newFrame()
 {
+
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-
 	m_view->newFrameStart(ImGui::GetIO().DisplaySize.x / ImGui::GetIO().DisplaySize.y);
-
 	showInterface();
-	simulationStep(ImGui::GetIO().DeltaTime);
+	m_last_frame_time = ImGui::GetIO().DeltaTime;
+
+	simulationStep(m_last_frame_time);
 
 	render();
-
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void SimulationController::simulationStep(float time_delta)
 {
-	m_last_frame_time = time_delta;
-
 	if (m_state != SimulationState::SIMULATION_RUN)
 	{
 		return;
@@ -92,16 +95,11 @@ void SimulationController::simulationStep(float time_delta)
 		m_settings.m_first_frames_time_step : time_delta;
 	simulation_time_delta = m_settings.m_use_real_time ? simulation_time_delta : m_settings.m_time_step;
 
-	pushStatistic(m_model->simulationStep(simulation_time_delta), time_delta);
+	const ExecutionStatistic& statistic = m_model->simulationStep(simulation_time_delta);
 
+	pushStatistic(statistic, time_delta);
 	++m_simulation_frame_number;
 	m_simulation_frame_number = m_simulation_frame_number % UINT64_MAX;
-
-
-	if (!m_settings.m_use_real_time && fabsf(m_settings.m_pause_between_frames) > FLT_EPSILON)
-	{
-		Sleep((DWORD)(m_settings.m_pause_between_frames * 1000.0f));
-	}
 }
 
 void SimulationController::showInterface()
@@ -191,8 +189,8 @@ void SimulationController::moveCamera(MovementDirection direction, bool fast)
 
 bool SimulationController::loadCloth()
 {
-	std::vector<glm::vec3> coords;
-	std::vector<glm::uvec3> indices;
+	AlignedVector<glm::vec3> coords;
+	AlignedVector<glm::uvec3> indices;
 	if (!readGeometryFromFile(coords, indices, m_found_files[m_new_cloth_parameters.m_file_index]))
 	{
 		return false;
@@ -207,7 +205,7 @@ bool SimulationController::loadCloth()
 	}
 
 	const float vertex_mass = cloth_square * m_new_cloth_parameters.m_material_props.m_density / coords.size();
-	std::vector<float> opposite_masses(coords.size(), vertex_mass);
+	AlignedVector<float> opposite_masses(coords.size(), vertex_mass);
 
 	std::vector<Cloth> new_cloth;
 	new_cloth.emplace_back(std::move(coords), std::move(indices), std::move(opposite_masses), m_new_cloth_parameters.m_material_props,
@@ -219,8 +217,8 @@ bool SimulationController::loadCloth()
 
 bool SimulationController::loadCollider()
 {
-	std::vector<glm::vec3> coords;
-	std::vector<glm::uvec3> indices;
+	AlignedVector<glm::vec3> coords;
+	AlignedVector<glm::uvec3> indices;
 	if (!readGeometryFromFile(coords, indices, m_found_files[m_new_collider_parameters.m_file_index]))
 	{
 		return false;
@@ -283,7 +281,7 @@ bool SimulationController::loadColliderCandidate()
 	return true;
 }
 
-float SimulationController::getAverageEdgeLength(const std::vector<glm::vec3>& coords, const std::vector<glm::uvec3>& indices) const
+float SimulationController::getAverageEdgeLength(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices) const
 {
 	float result = 0.0f;
 	for (const auto& triangle : indices)
@@ -296,7 +294,7 @@ float SimulationController::getAverageEdgeLength(const std::vector<glm::vec3>& c
 	return result / indices.size() / 3.0f;
 }
 
-void SimulationController::transformCoords(const glm::vec3& rotations, const glm::vec3& size, const glm::vec3& translation, std::vector<glm::vec3>& coords) const
+void SimulationController::transformCoords(const glm::vec3& rotations, const glm::vec3& size, const glm::vec3& translation, AlignedVector<glm::vec3>& coords) const
 {
 	glm::mat4x4 rotation = glm::identity<glm::mat4x4>();
 	rotation = glm::rotate(rotation, glm::radians(rotations[0]), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -311,7 +309,7 @@ void SimulationController::transformCoords(const glm::vec3& rotations, const glm
 	}
 }
 
-bool SimulationController::readGeometryFromFile(std::vector<glm::vec3>& coords, std::vector<glm::uvec3>& indices, const std::string& file_path) const
+bool SimulationController::readGeometryFromFile(AlignedVector<glm::vec3>& coords, AlignedVector<glm::uvec3>& indices, const std::string& file_path) const
 {
 	std::ifstream stream;
 	stream.open(file_path.c_str());
@@ -651,34 +649,40 @@ void SimulationController::showSimulationParamsWindow()
 	ModelSettings& model_settings = m_model->getSettings();
 
 	ImGui::Text("Speeds and accelerations");
-	ImGui::InputFloat("Speed damping coefficient (0-1)", &model_settings.m_speed_damping_coefficient);
-	ImGui::InputFloat("Gravitational acceleration (sm/s^2)", &model_settings.m_gravity);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputFloat("Speed damping coefficient (0-1)", &model_settings.m_speed_damping_coefficient);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputFloat("Gravitational acceleration (sm/s^2)", &model_settings.m_gravity);
 
 	ImGui::Text("Collisions");
-	ImGui::InputFloat("Max cloth collision radius (sm)", &model_settings.m_max_collision_radius_for_cloth);
-	ImGui::InputFloat("Max collider collision radius (sm)", &model_settings.m_max_collision_radius_for_colliders);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputFloat("Max cloth collision radius (sm)", &model_settings.m_max_collision_radius_for_cloth);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputFloat("Max collider collision radius (sm)", &model_settings.m_max_collision_radius_for_colliders);
 	changed_parameters.m_need_recreate_r_tree |= ImGui::InputInt("R-tree min children", &model_settings.m_r_tree_min);
 	changed_parameters.m_need_recreate_r_tree |= ImGui::InputInt("R-tree max children", &model_settings.m_r_tree_max);
 
 	ImGui::Text("Calculations");
-	changed_parameters.m_need_recreate_internal_constraints_graph |= ImGui::InputInt("Internal constraints threads count", &model_settings.m_internal_constraints_threads_count);
-	changed_parameters.m_need_recreate_other_constraints_graphs |= ImGui::InputInt("Other constraints threads count", &model_settings.m_other_constraints_threads_count);
-	ImGui::InputInt("Check collisions threads count", &model_settings.m_check_collisions_threads_count);
-	changed_parameters.m_need_recreate_internal_constraints_graph |= ImGui::InputInt("Preferred partitions count", &model_settings.m_preferred_partitions_count);
-	ImGui::InputInt("Iterations count", &model_settings.m_iterations_count);
-	ImGui::Checkbox("Real time simulation", &m_settings.m_use_real_time);
+	changed_parameters.m_need_recreate_internal_constraints_graphs |= ImGui::InputInt("Preferred partitions count", &model_settings.m_preferred_partitions_count);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputInt("Iterations count", &model_settings.m_iterations_count);
+	changed_parameters.m_some_params_changed |=
+		ImGui::Checkbox("Real time simulation", &m_settings.m_use_real_time);
 	if (!m_settings.m_use_real_time)
 	{
-		ImGui::InputFloat("Time step (s)", &m_settings.m_time_step);
-		ImGui::InputFloat("Pause between frames (s)", &m_settings.m_pause_between_frames);
+		changed_parameters.m_some_params_changed |=
+			ImGui::InputFloat("Time step (s)", &m_settings.m_time_step);
 	}
 
-	if (changed_parameters.m_need_recreate_r_tree || changed_parameters.m_need_recreate_internal_constraints_graph ||
-		changed_parameters.m_need_recreate_other_constraints_graphs)
+	changed_parameters.m_some_params_changed |= changed_parameters.m_need_recreate_r_tree;
+	changed_parameters.m_some_params_changed |= changed_parameters.m_need_recreate_internal_constraints_graphs;
+
+	if (changed_parameters.m_some_params_changed)
 	{
 		clampSimulationParameters();
-		m_model->notifySettingsUpdated(changed_parameters);
 	}
+
+	m_model->notifySettingsUpdated(changed_parameters);
 
 	ImGui::End();
 }
@@ -703,32 +707,40 @@ void SimulationController::showRunningSimulationWindow()
 	ModelSettings& model_settings = m_model->getSettings();
 
 	ImGui::Text("Speeds and accelerations");
-	ImGui::InputFloat("Speed damping coefficient (0-1)", &model_settings.m_speed_damping_coefficient);
-	ImGui::InputFloat("Gravitational acceleration (sm/s^2)", &model_settings.m_gravity);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputFloat("Speed damping coefficient (0-1)", &model_settings.m_speed_damping_coefficient);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputFloat("Gravitational acceleration (sm/s^2)", &model_settings.m_gravity);
 
 	ImGui::Text("Collisions");
-	ImGui::InputFloat("Max cloth collision radius (sm)", &model_settings.m_max_collision_radius_for_cloth);
-	ImGui::InputFloat("Max collider collision radius (sm)", &model_settings.m_max_collision_radius_for_colliders);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputFloat("Max cloth collision radius (sm)", &model_settings.m_max_collision_radius_for_cloth);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputFloat("Max collider collision radius (sm)", &model_settings.m_max_collision_radius_for_colliders);
 	changed_parameters.m_need_recreate_r_tree |= ImGui::InputInt("R-tree min children", &model_settings.m_r_tree_min);
 	changed_parameters.m_need_recreate_r_tree |= ImGui::InputInt("R-tree max children", &model_settings.m_r_tree_max);
 
 	ImGui::Text("Calculations");
-	ImGui::InputInt("Iterations count", &model_settings.m_iterations_count);
-	ImGui::Checkbox("Real time simulation", &m_settings.m_use_real_time);
+	changed_parameters.m_some_params_changed |=
+		ImGui::InputInt("Iterations count", &model_settings.m_iterations_count);
+	changed_parameters.m_some_params_changed |=
+		ImGui::Checkbox("Real time simulation", &m_settings.m_use_real_time);
 	if (!m_settings.m_use_real_time)
 	{
-		ImGui::InputFloat("Time step (s)", &m_settings.m_time_step);
-		ImGui::InputFloat("Pause between frames (s)", &m_settings.m_pause_between_frames);
+		changed_parameters.m_some_params_changed |=
+			ImGui::InputFloat("Time step (s)", &m_settings.m_time_step);
 	}
 
-	ImGui::End();
+	changed_parameters.m_some_params_changed |= changed_parameters.m_need_recreate_r_tree;
 
-	if (changed_parameters.m_need_recreate_r_tree || changed_parameters.m_need_recreate_internal_constraints_graph ||
-		changed_parameters.m_need_recreate_other_constraints_graphs)
+	if (changed_parameters.m_some_params_changed)
 	{
 		clampSimulationParameters();
-		m_model->notifySettingsUpdated(changed_parameters);
 	}
+
+	m_model->notifySettingsUpdated(changed_parameters);
+
+	ImGui::End();
 }
 
 ImPlotPoint sampleUin8Stats(int i, void* data)
@@ -766,13 +778,15 @@ void SimulationController::showStatisticWindow()
 	{
 		ImPlot::SetupAxis(ImAxis_::ImAxis_X1, "", ImPlotAxisFlags_::ImPlotAxisFlags_NoDecorations);
 		ImPlot::SetupAxis(ImAxis_::ImAxis_Y1, "Miliseconds", ImPlotAxisFlags_::ImPlotAxisFlags_AutoFit);
+		ImPlot::PlotLineG("Evaluate forces", sampleUin16Stats, m_statistic.m_evaluate_forces_time.data(), STATISTIC_SIZE);
 		ImPlot::PlotLineG("Create R-tree", sampleUin16Stats, m_statistic.m_rtree_creation_time.data(), STATISTIC_SIZE);
 		ImPlot::PlotLineG("Find collisions candidates", sampleUin16Stats, m_statistic.m_find_collisions_candidates_time.data(), STATISTIC_SIZE);
 		ImPlot::PlotLineG("Check collisions candidates", sampleUin16Stats, m_statistic.m_check_collisions_candidates_time.data(), STATISTIC_SIZE);
 		ImPlot::PlotLineG("Collisions graph", sampleUin16Stats, m_statistic.m_collisions_constraints_graph_time.data(), STATISTIC_SIZE);
 		ImPlot::PlotLineG("User constraints graph", sampleUin16Stats, m_statistic.m_user_constraints_graph_time.data(), STATISTIC_SIZE);
-		ImPlot::PlotLineG("Evaluate constraints", sampleUin16Stats, m_statistic.m_evaluate_constraints_time.data(), STATISTIC_SIZE);
-		ImPlot::PlotLineG("Evaluate friction", sampleUin16Stats, m_statistic.m_evaluate_friction_time.data(), STATISTIC_SIZE);
+		ImPlot::PlotLineG("Evaluate constraints and friction", sampleUin16Stats, m_statistic.m_evaluate_constraints_time.data(), STATISTIC_SIZE);
+		ImPlot::PlotLineG("Update positions and speeds", sampleUin16Stats, m_statistic.m_update_positions_and_speeds_time.data(), STATISTIC_SIZE);
+		ImPlot::PlotLineG("Update normals", sampleUin16Stats, m_statistic.m_update_normals_time.data(), STATISTIC_SIZE);
 		ImPlot::EndPlot();
 	};
 #endif
@@ -803,14 +817,16 @@ void SimulationController::pushStatistic(const ExecutionStatistic& statistic, fl
 {
 	m_statistic.m_framerate[STATISTIC_INDEX] = (uint16_t)(1.0f / time_delta);
 
-#ifdef MEASURE_TIME
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	m_statistic.m_evaluate_forces_time[STATISTIC_INDEX] = statistic.m_evaluate_forces_time;
 	m_statistic.m_rtree_creation_time[STATISTIC_INDEX] = statistic.m_rtree_creation_time;
 	m_statistic.m_find_collisions_candidates_time[STATISTIC_INDEX] = statistic.m_find_collisions_candidates_time;
 	m_statistic.m_check_collisions_candidates_time[STATISTIC_INDEX] = statistic.m_check_collisions_candidates_time;
 	m_statistic.m_collisions_constraints_graph_time[STATISTIC_INDEX] = statistic.m_collisions_constraints_graph_time;
 	m_statistic.m_user_constraints_graph_time[STATISTIC_INDEX] = statistic.m_user_constraints_graph_time;
 	m_statistic.m_evaluate_constraints_time[STATISTIC_INDEX] = statistic.m_evaluate_constraints_time;
-	m_statistic.m_evaluate_friction_time[STATISTIC_INDEX] = statistic.m_evaluate_friction_time;
+	m_statistic.m_update_positions_and_speeds_time[STATISTIC_INDEX] = statistic.m_update_positions_and_speeds_time;
+	m_statistic.m_update_normals_time[STATISTIC_INDEX] = statistic.m_update_normals_time;
 #endif
 
 	m_statistic.m_internal_constraints_count = statistic.m_internal_constraints_count;

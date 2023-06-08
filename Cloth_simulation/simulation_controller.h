@@ -61,6 +61,113 @@ public:
 		return m_state;
 	}
 
+#ifdef PERFORMANCE_TEST
+	_NODISCARD uint64_t getAverageFramerate() const
+	{
+		return getAverageValue(m_statistic.m_framerate);
+	}
+
+	_NODISCARD uint64_t getAverageEvaluateForcesTime() const
+	{
+		return getAverageValue(m_statistic.m_evaluate_forces_time);
+	}
+
+	_NODISCARD uint64_t getAverageRTreeCreationTime() const
+	{
+		return getAverageValue(m_statistic.m_rtree_creation_time);
+	}
+
+	_NODISCARD uint64_t getAverageFindCollisionCandidatesTime() const
+	{
+		return getAverageValue(m_statistic.m_find_collisions_candidates_time);
+	}
+
+	_NODISCARD uint64_t getAverageCheckCollisionCandidatesTime() const
+	{
+		return getAverageValue(m_statistic.m_check_collisions_candidates_time);
+	}
+
+	_NODISCARD uint64_t getAverageCollisionConstraintsGraphTime() const
+	{
+		return getAverageValue(m_statistic.m_collisions_constraints_graph_time);
+	}
+
+	_NODISCARD uint64_t getAverageUserConstraintsGraphTime() const
+	{
+		return getAverageValue(m_statistic.m_user_constraints_graph_time);
+	}
+
+	_NODISCARD uint64_t getAverageEvaluateConstraintsTime() const
+	{
+		return getAverageValue(m_statistic.m_evaluate_constraints_time);
+	}
+
+	_NODISCARD uint64_t getAverageCollisionConstraitnsCount() const
+	{
+		return getAverageValue(m_statistic.m_collision_constraints_count);
+	}
+
+	_NODISCARD uint64_t getAverageUpdatePositionsAndSpeedsTime() const
+	{
+		return getAverageValue(m_statistic.m_update_positions_and_speeds_time);
+	}
+
+	_NODISCARD uint64_t getAverageUpdateNormalsTime() const
+	{
+		return getAverageValue(m_statistic.m_update_normals_time);
+	}
+
+	_NODISCARD uint64_t getTotalEvaluateForcesTime() const
+	{
+		return getTotalValue(m_statistic.m_evaluate_forces_time);
+	}
+
+	_NODISCARD uint64_t getTotalRTreeCreationTime() const
+	{
+		return getTotalValue(m_statistic.m_rtree_creation_time);
+	}
+
+	_NODISCARD uint64_t getTotalFindCollisionCandidatesTime() const
+	{
+		return getTotalValue(m_statistic.m_find_collisions_candidates_time);
+	}
+
+	_NODISCARD uint64_t getTotalCheckCollisionCandidatesTime() const
+	{
+		return getTotalValue(m_statistic.m_check_collisions_candidates_time);
+	}
+
+	_NODISCARD uint64_t getTotalCollisionConstraintsGraphTime() const
+	{
+		return getTotalValue(m_statistic.m_collisions_constraints_graph_time);
+	}
+
+	_NODISCARD uint64_t getTotalUserConstraintsGraphTime() const
+	{
+		return getTotalValue(m_statistic.m_user_constraints_graph_time);
+	}
+
+	_NODISCARD uint64_t getTotalEvaluateConstraintsTime() const
+	{
+		return getTotalValue(m_statistic.m_evaluate_constraints_time);
+	}
+
+	_NODISCARD uint64_t getTotalCollisionConstraitnsCount() const
+	{
+		return getTotalValue(m_statistic.m_collision_constraints_count);
+	}
+
+	_NODISCARD uint64_t getTotalUpdatePositionsAndSpeedsTime() const
+	{
+		return getTotalValue(m_statistic.m_update_positions_and_speeds_time);
+	}
+
+	_NODISCARD uint64_t getTotalUpdateNormalsTime() const
+	{
+		return getTotalValue(m_statistic.m_update_normals_time);
+	}
+#endif
+
 private:
 	_NODISCARD bool loadCloth();
 
@@ -70,11 +177,11 @@ private:
 
 	_NODISCARD bool loadColliderCandidate();
 
-	void transformCoords(const glm::vec3& rotations, const glm::vec3& size, const glm::vec3& translation, std::vector<glm::vec3>& coords) const;
+	void transformCoords(const glm::vec3& rotations, const glm::vec3& size, const glm::vec3& translation, AlignedVector<glm::vec3>& coords) const;
 
-	_NODISCARD float getAverageEdgeLength(const std::vector<glm::vec3>& coords, const std::vector<glm::uvec3>& indices) const;
+	_NODISCARD float getAverageEdgeLength(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices) const;
 
-	_NODISCARD bool readGeometryFromFile(std::vector<glm::vec3>& coords, std::vector<glm::uvec3>& indices, const std::string& file_path) const;
+	_NODISCARD bool readGeometryFromFile(AlignedVector<glm::vec3>& coords, AlignedVector<glm::uvec3>& indices, const std::string& file_path) const;
 
 	std::vector<std::vector<KeysUtils::ConstraintKey>> addFixedVertex(const std::vector<FixedVertexTask>& tasks);
 
@@ -107,14 +214,14 @@ private:
 	{
 		m_new_cloth_parameters.m_material_props.m_thickness = std::clamp(m_new_cloth_parameters.m_material_props.m_thickness, FLT_EPSILON, 10.0f);
 		m_new_cloth_parameters.m_material_props.m_friction_coeff = std::clamp(m_new_cloth_parameters.m_material_props.m_friction_coeff, FLT_EPSILON, 1.0f);
-		m_new_cloth_parameters.m_material_props.m_density = std::clamp(m_new_cloth_parameters.m_material_props.m_density, FLT_EPSILON, 1000.0f);
-		m_new_cloth_parameters.m_material_props.m_bending_stiffness = std::clamp(m_new_cloth_parameters.m_material_props.m_bending_stiffness, FLT_EPSILON, 100000.0f);
-		m_new_cloth_parameters.m_material_props.m_young_welt = std::clamp(m_new_cloth_parameters.m_material_props.m_young_welt, FLT_EPSILON, 100000.0f);
-		m_new_cloth_parameters.m_material_props.m_young_warp = std::clamp(m_new_cloth_parameters.m_material_props.m_young_warp, FLT_EPSILON, 100000.0f);
-		m_new_cloth_parameters.m_material_props.m_poisson_welt = std::clamp(m_new_cloth_parameters.m_material_props.m_poisson_welt, FLT_EPSILON, 100000.0f);
-		m_new_cloth_parameters.m_material_props.m_poisson_warp = std::clamp(m_new_cloth_parameters.m_material_props.m_poisson_warp, FLT_EPSILON, 100000.0f);
-		m_new_cloth_parameters.m_material_props.m_shear_modulus = std::clamp(m_new_cloth_parameters.m_material_props.m_shear_modulus, FLT_EPSILON, 100000.0f);
-		m_new_cloth_parameters.m_material_props.m_stretch_stiffness = std::clamp(m_new_cloth_parameters.m_material_props.m_stretch_stiffness, FLT_EPSILON, 100000.0f);
+		m_new_cloth_parameters.m_material_props.m_density = std::clamp(m_new_cloth_parameters.m_material_props.m_density, FLT_EPSILON, 1.0f);
+		m_new_cloth_parameters.m_material_props.m_bending_stiffness = std::clamp(m_new_cloth_parameters.m_material_props.m_bending_stiffness, FLT_EPSILON, 1.0e6f);
+		m_new_cloth_parameters.m_material_props.m_young_welt = std::clamp(m_new_cloth_parameters.m_material_props.m_young_welt, FLT_EPSILON, 1.0e7f);
+		m_new_cloth_parameters.m_material_props.m_young_warp = std::clamp(m_new_cloth_parameters.m_material_props.m_young_warp, FLT_EPSILON, 1.0e7f);
+		m_new_cloth_parameters.m_material_props.m_poisson_welt = std::clamp(m_new_cloth_parameters.m_material_props.m_poisson_welt, FLT_EPSILON, 1.0f);
+		m_new_cloth_parameters.m_material_props.m_poisson_warp = std::clamp(m_new_cloth_parameters.m_material_props.m_poisson_warp, FLT_EPSILON, 1.0f);
+		m_new_cloth_parameters.m_material_props.m_shear_modulus = std::clamp(m_new_cloth_parameters.m_material_props.m_shear_modulus, FLT_EPSILON, 1.0f);
+		m_new_cloth_parameters.m_material_props.m_stretch_stiffness = std::clamp(m_new_cloth_parameters.m_material_props.m_stretch_stiffness, FLT_EPSILON, 1.0e6f);
 
 		m_new_collider_parameters.m_friction_coeff = std::clamp(m_new_collider_parameters.m_friction_coeff, FLT_EPSILON, 1.0f);
 	}
@@ -143,18 +250,34 @@ private:
 		model_settings.m_max_collision_radius_for_colliders = std::clamp(model_settings.m_max_collision_radius_for_colliders, 0.0f, 10.0f);
 		model_settings.m_r_tree_min = std::clamp(model_settings.m_r_tree_min, 1, 50);
 		model_settings.m_r_tree_max = std::clamp(model_settings.m_r_tree_max, model_settings.m_r_tree_min * 2, 100);
-		model_settings.m_internal_constraints_threads_count = std::clamp(model_settings.m_internal_constraints_threads_count, 1, 32);
-		model_settings.m_other_constraints_threads_count = std::clamp(model_settings.m_other_constraints_threads_count, 1, 32);
-		model_settings.m_check_collisions_threads_count = std::clamp(model_settings.m_check_collisions_threads_count, 1, 32);
-		model_settings.m_preferred_partitions_count = std::clamp(model_settings.m_preferred_partitions_count, 0, 30);
-		model_settings.m_iterations_count = std::clamp(model_settings.m_iterations_count, 0, 100);
-		m_settings.m_time_step = std::clamp(m_settings.m_time_step, 0.0f, 1.0f);
-		m_settings.m_pause_between_frames = std::clamp(m_settings.m_pause_between_frames, 0.0f, 10.0f);
+		model_settings.m_preferred_partitions_count = std::clamp(model_settings.m_preferred_partitions_count, 1, 50);
+		model_settings.m_iterations_count = std::clamp(model_settings.m_iterations_count, 1, 100);
+		m_settings.m_time_step = std::clamp(m_settings.m_time_step, 0.001f, 1.0f);
 	}
 
 	void showStatisticWindow();
 
 	void pushStatistic(const ExecutionStatistic& statistic, float time_delta);
+
+#ifdef PERFORMANCE_TEST
+	template<class T>
+	_NODISCARD static uint64_t getTotalValue(const std::vector<T>& values)
+	{
+		uint64_t result = 0u;
+		for (auto elem : values)
+		{
+			result += (uint64_t)elem;
+		}
+
+		return result;
+	}
+
+	template<class T>
+	_NODISCARD static uint64_t getAverageValue(const std::vector<T>& values)
+	{
+		return getTotalValue(values) / values.size();
+	}
+#endif
 
 private:
 	SimulationState m_state = SimulationState::ADD_CLOTH_AND_COLLIDERS;
@@ -175,7 +298,6 @@ private:
 
 		bool m_use_real_time = false;
 		float m_time_step = 1.0f / 100.0f;
-		float m_pause_between_frames = 0.0f;
 
 		const int m_first_frames_count = 5;
 		const float m_first_frames_time_step = 0.001f;
@@ -214,8 +336,8 @@ private:
 
 	struct
 	{
-		std::vector<glm::vec3> m_coords;
-		std::vector<glm::uvec3> m_indices;
+		AlignedVector<glm::vec3> m_coords;
+		AlignedVector<glm::uvec3> m_indices;
 		float m_average_edge_length = 0.0f;
 	}
 	m_candidate_object;
@@ -225,15 +347,17 @@ private:
 		// frames per second
 		std::vector<uint16_t> m_framerate;
 
-#ifdef MEASURE_TIME
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
 		// miliseconds
+		std::vector<uint16_t> m_evaluate_forces_time;
 		std::vector<uint16_t> m_rtree_creation_time;
 		std::vector<uint16_t> m_find_collisions_candidates_time;
 		std::vector<uint16_t> m_check_collisions_candidates_time;
 		std::vector<uint16_t> m_collisions_constraints_graph_time;
 		std::vector<uint16_t> m_user_constraints_graph_time;
 		std::vector<uint16_t> m_evaluate_constraints_time;
-		std::vector<uint16_t> m_evaluate_friction_time;
+		std::vector<uint16_t> m_update_positions_and_speeds_time;
+		std::vector<uint16_t> m_update_normals_time;
 #endif
 
 		// counts

@@ -26,7 +26,7 @@ void ConstraintsGraph::setConstraints(ConstraintsBuffers& constraints, int verti
 		if (m_settings.m_need_insert_phantoms)
 		{
 			const std::vector<std::set<int>> cliques = bronKerboschDegeneracy();
-			if (!cliques.empty() && (cliques[0].size() <= CONSTRAINT_VERTICES_COUNT[(int)ConstraintType::PHANTOM_VERTICES]))
+			if (!cliques.empty() && (cliques[0].size() <= CONSTRAINT_UINT_COUNT[(int)ConstraintType::PHANTOM_VERTICES]))
 			{
 				replaceVertices(cliques);
 				generatePhantomConstraintsBuffers();
@@ -60,9 +60,9 @@ void ConstraintsGraph::createEdges()
 	std::vector<std::vector<int>> nodes_affecting_the_vertex(m_original_vertices_count + m_phantom_vertices_count);
 	for (int i = 0; i < m_nodes.getNodesCount(); ++i)
 	{
-		const uint32_t* current_node_vertices = m_nodes.getVertices(i);
+		const uint32_t* current_node_vertices = m_nodes.getEnabledConstraintVertices(i);
 
-		for (int j = 0; j < CONSTRAINT_VERTICES_COUNT[m_nodes.getType(i)]; ++j)
+		for (int j = 0; j < CONSTRAINT_UINT_COUNT[m_nodes.getEnabledConstraintType(i)]; ++j)
 		{
 			nodes_affecting_the_vertex[current_node_vertices[j]].push_back(i);
 		}
@@ -226,14 +226,14 @@ std::vector<int> ConstraintsGraph::sortDegeneracy()
 
 int ConstraintsGraph::findCommonVertex(const std::set<int>& clique) const
 {
-	const uint32_t* current_node_vertices = m_nodes.getVertices(*clique.begin());
-	int current_node_vertices_count = CONSTRAINT_VERTICES_COUNT[m_nodes.getType(*clique.begin())];
+	const uint32_t* current_node_vertices = m_nodes.getEnabledConstraintVertices(*clique.begin());
+	int current_node_vertices_count = CONSTRAINT_UINT_COUNT[m_nodes.getEnabledConstraintType(*clique.begin())];
 	std::set<uint32_t> common_vertices = { current_node_vertices, current_node_vertices + current_node_vertices_count };
 
 	for (auto node : clique)
 	{
-		current_node_vertices = m_nodes.getVertices(node);
-		current_node_vertices_count = CONSTRAINT_VERTICES_COUNT[m_nodes.getType(node)];
+		current_node_vertices = m_nodes.getEnabledConstraintVertices(node);
+		current_node_vertices_count = CONSTRAINT_UINT_COUNT[m_nodes.getEnabledConstraintType(node)];
 
 		const std::set<uint32_t> tmp_set = { current_node_vertices, current_node_vertices + current_node_vertices_count };
 		common_vertices = MathUtils::intersectSets(&common_vertices, &tmp_set);
@@ -260,8 +260,8 @@ void ConstraintsGraph::replaceVertices(const std::vector<std::set<int>>& cliques
 
 		for (auto node : clique)
 		{
-			node_vertices = m_nodes.getVertices(node);
-			for (int i = 0; i < CONSTRAINT_VERTICES_COUNT[(int)m_nodes.getType(node)]; ++i)
+			node_vertices = m_nodes.getEnabledConstraintVertices(node);
+			for (int i = 0; i < CONSTRAINT_UINT_COUNT[(int)m_nodes.getEnabledConstraintType(node)]; ++i)
 			{
 				if (node_vertices[i] == vertex_to_replace)
 				{
@@ -282,7 +282,7 @@ void ConstraintsGraph::generatePhantomConstraintsBuffers()
 	m_phantom_constraints = ConstraintsBuffers::reserveBuffers(constraints_per_type);
 
 	std::vector<uint32_t> constraint_vertices;
-	constraint_vertices.reserve(CONSTRAINT_VERTICES_COUNT[(size_t)ConstraintType::PHANTOM_VERTICES]);
+	constraint_vertices.reserve(CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::PHANTOM_VERTICES]);
 
 	for (const auto& phantom_constraint : m_replaced_vertices)
 	{
@@ -359,11 +359,11 @@ void ConstraintsGraph::createMap()
 	for (int i = 0; i < m_nodes.getNodesCount(); ++i)
 	{
 		color = m_settings.m_need_create_partitions ? m_nodes.getColor(i) : 0;
-		type = m_nodes.getType(i);
+		type = m_nodes.getEnabledConstraintType(i);
 
 		if (color != NO_COLOR)
 		{
-			m_tasks_map.pushTask(m_nodes.getConstraintID(i), color, m_nodes.getType(i));
+			m_tasks_map.pushTask(m_nodes.getConstraintID(i), color);
 		}
 		else
 		{
@@ -381,7 +381,7 @@ void ConstraintsGraph::createMap()
 	// phantom constraints go to the last partition
 	for (int i = 0; i < m_replaced_vertices.size(); ++i)
 	{
-		m_tasks_map.pushTask(m_nodes.getConstraintID(i), m_colors_count, (size_t)ConstraintType::PHANTOM_VERTICES);
+		m_tasks_map.pushTask(m_nodes.getConstraintID(i), m_colors_count);
 	}
 }
 
@@ -397,7 +397,7 @@ void ConstraintsGraph::makeMapUniform(const std::array<std::vector<int>, CONSTRA
 	}
 
 	// calculate how many tasks of each type partitions should have
-	const std::array<int, CONSTRAINT_TYPES_COUNT> constraints_per_type = m_nodes.countNodesPerType();
+	const std::array<int, CONSTRAINT_TYPES_COUNT> constraints_per_type = m_nodes.countEnabledConstraintsPerType();
 	int preferred_tasks_count_per_type[CONSTRAINT_TYPES_COUNT] = { 0 };
 	for (int i = 0; i < CONSTRAINT_TYPES_COUNT; ++i)
 	{
@@ -414,7 +414,7 @@ void ConstraintsGraph::makeMapUniform(const std::array<std::vector<int>, CONSTRA
 
 		for (int type = 0; type < CONSTRAINT_TYPES_COUNT; ++type)
 		{
-			int tasks_to_add = preferred_tasks_count_per_type[type] - m_tasks_map.getTasksCount(partition, type);
+			int tasks_to_add = preferred_tasks_count_per_type[type] - m_tasks_map.getTasksCount(partition);
 			if (tasks_to_add <= 0 || !independent_tasks_count_per_type[type])
 			{
 				continue;
@@ -423,7 +423,7 @@ void ConstraintsGraph::makeMapUniform(const std::array<std::vector<int>, CONSTRA
 			tasks_to_add = std::min(tasks_to_add, independent_tasks_count_per_type[type]);
 			for (int k = 0; k < tasks_to_add; ++k)
 			{
-				m_tasks_map.pushTask(m_nodes.getConstraintID(independent_tasks[(size_t)type][(size_t)tasks_to_add - (size_t)k - 1u]), partition, type);
+				m_tasks_map.pushTask(m_nodes.getConstraintID(independent_tasks[(size_t)type][(size_t)tasks_to_add - (size_t)k - 1u]), partition);
 			}
 
 			preferred_tasks_count_per_type[type] -= tasks_to_add;
