@@ -15,7 +15,7 @@ public:
 
 	Collider& operator=(Collider&&) = default;
 
-	Collider(const std::vector<glm::vec3>& coords, const std::vector<glm::uvec3>& indices, float friction_coefficient) : m_coords(coords), m_indices(indices)
+	Collider(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices, float friction_coefficient) : m_coords(coords), m_indices(indices)
 	{
 		m_normals.resize(m_coords.size(), { 0.0f, 0.0f, 0.0f });
 		m_primitives_ownership = PrimitivesOwnershipUtils::generatePrimitivesOwnership(m_indices);
@@ -39,7 +39,7 @@ public:
 		return m_coords[index];
 	}
 
-	_NODISCARD const std::vector<glm::vec3>& getCoords() const
+	_NODISCARD const AlignedVector<glm::vec3>& getCoords() const
 	{
 		return m_coords;
 	}
@@ -53,7 +53,7 @@ public:
 			&m_coords[indices[2]] };
 	}
 
-	_NODISCARD const std::vector<glm::vec3>& getNormals() const
+	_NODISCARD const AlignedVector<glm::vec3>& getNormals() const
 	{
 		return m_normals;
 	}
@@ -63,7 +63,7 @@ public:
 		return m_indices[index];
 	}
 
-	_NODISCARD const std::vector<glm::uvec3>& getIndices() const
+	_NODISCARD const AlignedVector<glm::uvec3>& getIndices() const
 	{
 		return m_indices;
 	}
@@ -73,7 +73,7 @@ public:
 		return PrimitivesOwnershipUtils::TrianglePrimitivesOwnership(m_primitives_ownership[index]);
 	}
 
-	_NODISCARD const std::vector<uint8_t>& getTrianglesPrimitivesOwnership() const
+	_NODISCARD const AlignedVector<uint8_t>& getTrianglesPrimitivesOwnership() const
 	{
 		return m_primitives_ownership;
 	}
@@ -98,10 +98,10 @@ public:
 	void pushColliders(const std::vector<Collider>& colliders);
 
 private:
-	std::vector<glm::vec3> m_coords;
-	std::vector<glm::vec3> m_normals;
-	std::vector<glm::uvec3> m_indices;
-	std::vector<uint8_t> m_primitives_ownership;
+	AlignedVector<glm::vec3> m_coords;
+	AlignedVector<glm::vec3> m_normals;
+	AlignedVector<glm::uvec3> m_indices;
+	AlignedVector<uint8_t> m_primitives_ownership;
 	std::vector<int> m_borders;
 	std::vector<float> m_friction_coefficients;
 };

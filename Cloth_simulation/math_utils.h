@@ -285,8 +285,8 @@ namespace MathUtils
 		};
 	}
 
-	inline void calculateNormals(const std::vector<glm::vec3>& coords, const std::vector<glm::uvec3>& indices,
-		const std::vector<uint8_t>& primitives_ownership, std::vector<glm::vec3>& normals)
+	inline void calculateNormals(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices,
+		const AlignedVector<uint8_t>& primitives_ownership, AlignedVector<glm::vec3>& normals)
 	{
 		for (int i = 0; i < normals.size(); ++i)
 		{

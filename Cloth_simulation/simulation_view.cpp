@@ -155,8 +155,8 @@ void SimulationView::setUniforms(const glm::vec3& color, float specular_intensit
 }
 
 
-void SimulationView::renderInternal(int vertices_count, int triangles_count, const std::vector<glm::vec3>& coords, const std::vector<glm::uvec3>& indices,
-	const std::vector<glm::vec3>& normals, DrawMode draw_mode, int vbo, int ebo) const
+void SimulationView::renderInternal(int vertices_count, int triangles_count, const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices,
+	const AlignedVector<glm::vec3>& normals, DrawMode draw_mode, int vbo, int ebo) const
 {
 	const uint64_t u_vertices_count = (uint64_t)vertices_count;
 	const uint64_t bytes_length = u_vertices_count * 3u * sizeof(float);
@@ -197,7 +197,7 @@ void SimulationView::renderInternal(int vertices_count, int triangles_count, con
 	}
 }
 
-void SimulationView::renderInternal(int vertices_count, int triangles_count, const std::vector<glm::vec3>& coords, const std::vector<glm::vec3>& normals, DrawMode draw_mode, int vbo, int ebo) const
+void SimulationView::renderInternal(int vertices_count, int triangles_count, const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::vec3>& normals, DrawMode draw_mode, int vbo, int ebo) const
 {
 	const uint64_t u_vertices_count = (uint64_t)vertices_count;
 	const uint64_t bytes_length = u_vertices_count * 3u * sizeof(float);
@@ -237,7 +237,7 @@ void SimulationView::renderInternal(int vertices_count, int triangles_count, con
 	}
 }
 
-void SimulationView::renderInternal(int vertices_count, int triangles_count, const std::vector<glm::vec3>& coords, const std::vector<glm::uvec3>& indices, DrawMode draw_mode, int vbo, int ebo) const
+void SimulationView::renderInternal(int vertices_count, int triangles_count, const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices, DrawMode draw_mode, int vbo, int ebo) const
 {
 	const uint64_t u_vertices_count = (uint64_t)vertices_count;
 	const uint64_t bytes_length = u_vertices_count * 3u * sizeof(float);

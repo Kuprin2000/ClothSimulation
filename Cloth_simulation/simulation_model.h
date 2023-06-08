@@ -4,6 +4,10 @@
 #include "collider.h"
 #include "defines.h"
 
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+#include <chrono>
+#endif
+
 struct FixedVertexTask
 {
 	int m_vertex = 0;
@@ -29,15 +33,17 @@ struct SewTask
 
 struct ExecutionStatistic
 {
-#ifdef MEASURE_TIME
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
 	// miliseconds
+	uint16_t m_evaluate_forces_time = 0u;
 	uint16_t m_rtree_creation_time = 0u;
 	uint16_t m_find_collisions_candidates_time = 0u;
 	uint16_t m_check_collisions_candidates_time = 0u;
 	uint16_t m_collisions_constraints_graph_time = 0u;
 	uint16_t m_user_constraints_graph_time = 0u;
 	uint16_t m_evaluate_constraints_time = 0u;
-	uint16_t m_evaluate_friction_time = 0u;
+	uint16_t m_update_positions_and_speeds_time = 0u;
+	uint16_t m_update_normals_time = 0u;
 #endif
 
 	// counts
@@ -50,17 +56,18 @@ struct ExecutionStatistic
 struct ChangedParameters
 {
 	bool m_need_recreate_r_tree = false;
-	bool m_need_recreate_internal_constraints_graph = false;
-	bool m_need_recreate_other_constraints_graphs = false;
+	bool m_need_recreate_internal_constraints_graphs = false;
+	bool m_some_params_changed = false;
 };
 
 class SimulationModel
 {
 public:
-	SimulationModel() : m_cloth({}, {}, {}, MaterialProperties(), 0, false, false),
-		m_cloth_constraints_graph(ConstraintsGraphSettings((m_settings.m_internal_constraints_threads_count != 1), m_settings.m_preferred_partitions_count, true)), m_collider({}, {}, 0.0f),
-		m_r_tree(m_settings.m_r_tree_min, m_settings.m_r_tree_max), m_collisions_constraints_graph(ConstraintsGraphSettings((m_settings.m_other_constraints_threads_count != 1), INT_MAX, false)),
-		m_user_defined_constraints_graph(ConstraintsGraphSettings((m_settings.m_other_constraints_threads_count != 1), INT_MAX, false))
+	SimulationModel() :
+		m_cloth({}, {}, {}, MaterialProperties(), 0, false, false),
+		m_cloth_constraints_graph(ConstraintsGraphSettings(m_settings.m_preferred_partitions_count, (THREADS_COUNT != 1), true)), m_collider({}, {}, 0.0f),
+		m_r_tree(m_settings.m_r_tree_min, m_settings.m_r_tree_max), m_collisions_constraints_graph(ConstraintsGraphSettings(INT_MAX, (THREADS_COUNT != 1), false)),
+		m_user_defined_constraints_graph(ConstraintsGraphSettings(INT_MAX, (THREADS_COUNT != 1), false))
 	{}
 
 	void notifySettingsUpdated(ChangedParameters parameters)
@@ -70,18 +77,10 @@ public:
 			m_r_tree = RTree(m_settings.m_r_tree_min, m_settings.m_r_tree_max);
 		}
 
-		if (parameters.m_need_recreate_internal_constraints_graph)
+		if (parameters.m_need_recreate_internal_constraints_graphs)
 		{
 			m_cloth_constraints_graph =
-				ConstraintsGraph(ConstraintsGraphSettings((m_settings.m_internal_constraints_threads_count != 1), m_settings.m_preferred_partitions_count, true));
-		}
-
-		if (parameters.m_need_recreate_other_constraints_graphs)
-		{
-			m_collisions_constraints_graph =
-				ConstraintsGraph(ConstraintsGraphSettings((m_settings.m_other_constraints_threads_count != 1), INT_MAX, false));
-			m_user_defined_constraints_graph =
-				ConstraintsGraph(ConstraintsGraphSettings((m_settings.m_other_constraints_threads_count != 1), INT_MAX, false));
+				ConstraintsGraph(ConstraintsGraphSettings(m_settings.m_preferred_partitions_count, (THREADS_COUNT != 1), true));
 		}
 	}
 
@@ -149,13 +148,12 @@ private:
 		m_r_tree.clear();
 		m_r_tree.insertMovingTriangles(m_cloth.getCoords(), m_cloth.getTestCoords(),
 			m_cloth.getIndices(), 0, RTree::ObjectType::CLOTH, std::min(max_movement, m_settings.m_max_collision_radius_for_cloth));
-		m_r_tree.insertTriangles(m_collider.getCoords(), m_collider.getIndices(), 0,
-			RTree::ObjectType::COLLIDER, std::min(max_movement, m_settings.m_max_collision_radius_for_colliders));
+		m_r_tree.insertTriangles(m_collider.getCoords(), m_collider.getIndices(), 0, RTree::ObjectType::COLLIDER, 0.0f);
 	}
 
 	void findCollisionsCandidates();
 
-	void createSelfCollisionCandidates(const std::array<int, 2>& triangles);
+	void createSelfCollisionCandidates(int triangle_a, int triangle_b);
 
 	void createColliderCollisionCandidate(int cloth_triangle_id, int collider_triangle_id);
 
@@ -164,6 +162,12 @@ private:
 	void replaceCandidatesWithRealCollisions();
 
 	void evaluateConstraints(float time_delta);
+
+	void evaluateInternalConstraints(float alpha_correction_coeff, int iteration);
+
+	void evaluateCollisionConstraints(float alpha_correction_coeff, int iteration);
+
+	void evaluateUserConstraints(float alpha_correction_coeff, int iteration);
 
 	void evaluateFriction(float time_delta);
 
@@ -179,7 +183,7 @@ private:
 	Collider m_collider;
 	RTree m_r_tree;
 
-	std::vector<int> m_collisions_candidates[CONSTRAINT_TYPES_COUNT];
+	// AlignedVector<int> m_collisions_candidates[CONSTRAINT_TYPES_COUNT];
 	ConstraintsBuffers m_collisions_constraints;
 	ConstraintsGraph m_collisions_constraints_graph;
 
@@ -188,4 +192,11 @@ private:
 	std::map<KeysUtils::ConstraintKey, std::vector<int>> m_user_defined_constraints_search_map;
 
 	ExecutionStatistic m_statistic;
+
+	float m_max_movement = 0.0f;
+
+#if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
+	std::chrono::steady_clock::time_point m_start_time = std::chrono::high_resolution_clock::now();
+	std::chrono::steady_clock::time_point m_end_time = std::chrono::high_resolution_clock::now();
+#endif
 };

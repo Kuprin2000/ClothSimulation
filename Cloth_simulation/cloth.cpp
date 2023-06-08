@@ -9,7 +9,7 @@
 #include "primitives_ownership_utils.h"
 #include "copy_utils.h"
 
-Cloth::Cloth(const std::vector<glm::vec3>& coords, const std::vector<glm::uvec3>& indices, const std::vector<float>& opposite_masses,
+Cloth::Cloth(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices, const AlignedVector<float>& opposite_masses,
 	const MaterialProperties& material_props, int layer_number, bool use_realistic_stretch, bool use_realistic_bending)
 {
 	m_vertices_data.m_coords = coords;
@@ -193,7 +193,7 @@ void Cloth::pushClothes(const std::vector<Cloth>& clothes)
 		{
 			new_constraint_type = constraints_to_add.getConstraintType(j);
 			new_constraint_vertices =
-			{ constraints_to_add.getConstraintVertices(j), constraints_to_add.getConstraintVertices(j) + CONSTRAINT_VERTICES_COUNT[(int)new_constraint_type] };
+			{ constraints_to_add.getConstraintVertices(j), constraints_to_add.getConstraintVertices(j) + CONSTRAINT_UINT_COUNT[(int)new_constraint_type] };
 			new_constraint_keys = KeysUtils::generateConstraintKeys(new_constraint_vertices, new_constraint_type);
 
 			std::for_each(new_constraint_keys.begin(), new_constraint_keys.end(), [index_accumulator](KeysUtils::ConstraintKey& key)
@@ -437,8 +437,8 @@ void Cloth::setupInternalConstraints(const MaterialProperties& material_props, b
 
 void Cloth::createStretchConstraint(uint32_t vertex_a, uint32_t vertex_b, float stiffness, std::vector<uint32_t>& dst_vertices, std::vector<float>& dst_data) const
 {
-	dst_vertices.resize(CONSTRAINT_VERTICES_COUNT[(size_t)ConstraintType::STRETCH]);
-	dst_data.resize(CONSTRAINT_DATA_COUNT[(size_t)ConstraintType::STRETCH]);
+	dst_vertices.resize(CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::STRETCH]);
+	dst_data.resize(CONSTRAINT_FLOAT_COUNT[(size_t)ConstraintType::STRETCH]);
 
 	// STRETCH: 2 - we control distance between them
 	dst_vertices = { std::min(vertex_a, vertex_b), std::max(vertex_a, vertex_b) };
@@ -451,8 +451,8 @@ void Cloth::createStretchConstraint(uint32_t vertex_a, uint32_t vertex_b, float 
 
 void Cloth::createRealisticStretchConstraint(uint32_t triangle_index, float stiffness, std::vector<uint32_t>& dst_vertices, std::vector<float>& dst_data) const
 {
-	dst_vertices.resize(CONSTRAINT_VERTICES_COUNT[(size_t)ConstraintType::REALISTIC_STRETCH]);
-	dst_data.resize(CONSTRAINT_DATA_COUNT[(size_t)ConstraintType::REALISTIC_STRETCH]);
+	dst_vertices.resize(CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::REALISTIC_STRETCH]);
+	dst_data.resize(CONSTRAINT_FLOAT_COUNT[(size_t)ConstraintType::REALISTIC_STRETCH]);
 
 	// REALISTIC_STRETCH: 3 - triangle controlled by the constraint
 	dst_vertices = { m_vertices_data.m_indices[triangle_index][0], m_vertices_data.m_indices[triangle_index][1], m_vertices_data.m_indices[triangle_index][2] };
@@ -472,8 +472,8 @@ void Cloth::createRealisticStretchConstraint(uint32_t triangle_index, float stif
 void Cloth::createBendConstraint(uint32_t triangle_a, uint32_t triangle_b, const KeysUtils::ConstraintKey& common_edge,
 	float bending_stiffness, std::vector<uint32_t>& dst_vertices, std::vector<float>& dst_data) const
 {
-	dst_vertices.resize(CONSTRAINT_VERTICES_COUNT[(size_t)ConstraintType::BEND]);
-	dst_data.resize(CONSTRAINT_DATA_COUNT[(size_t)ConstraintType::BEND]);
+	dst_vertices.resize(CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::BEND]);
+	dst_data.resize(CONSTRAINT_FLOAT_COUNT[(size_t)ConstraintType::BEND]);
 
 	const glm::uvec3& triangle_a_vertices = m_vertices_data.m_indices[triangle_a];
 	const glm::uvec3& triangle_b_vertices = m_vertices_data.m_indices[triangle_b];
@@ -538,8 +538,8 @@ void Cloth::createBendConstraint(uint32_t triangle_a, uint32_t triangle_b, const
 void Cloth::createRealisticBendConstraint(uint32_t triangle_a, uint32_t triangle_b, const KeysUtils::ConstraintKey& common_edge,
 	float bending_stiffness, std::vector<uint32_t>& dst_vertices, std::vector<float>& dst_data) const
 {
-	dst_vertices.resize(CONSTRAINT_VERTICES_COUNT[(size_t)ConstraintType::REALISTIC_BEND]);
-	dst_data.resize(CONSTRAINT_DATA_COUNT[(size_t)ConstraintType::REALISTIC_BEND]);
+	dst_vertices.resize(CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::REALISTIC_BEND]);
+	dst_data.resize(CONSTRAINT_FLOAT_COUNT[(size_t)ConstraintType::REALISTIC_BEND]);
 
 	const glm::uvec3& triangle_a_vertices = m_vertices_data.m_indices[triangle_a];
 	const glm::uvec3& triangle_b_vertices = m_vertices_data.m_indices[triangle_b];

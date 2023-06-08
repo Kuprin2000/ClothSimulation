@@ -1,5 +1,9 @@
 #pragma once
 
+// number of threads to use
+
+ #define THREADS_COUNT 8
+
 // if we use V-sync
 
 #define V_SYNC
@@ -30,5 +34,5 @@
 
 // #define PERFORMANCE_TEST
 #ifdef PERFORMANCE_TEST
-#define FRAMES_COUNT 100
+#define FRAMES_COUNT 200
 #endif

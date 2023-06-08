@@ -9,6 +9,7 @@
 #include "imgui/backends/imgui_impl_opengl3.h"
 #include "implot/implot.h"
 #include "simulation_controller.h"
+#include "defines.h"
 
 #ifdef PERFORMANCE_TEST
 #include <chrono>
@@ -76,13 +77,20 @@ int main()
 	auto begin = std::chrono::high_resolution_clock::now();
 #endif 
 
+	omp_set_dynamic(0);
+	omp_set_num_threads(THREADS_COUNT);
+
 	// main loop
-	while (!glfwWindowShouldClose(window))
+	bool need_close = false;
 	{
-		try
+		while (!need_close)
 		{
+
+			need_close = glfwWindowShouldClose(window);
 			processInput(window, controller);
+
 			controller.newFrame();
+
 			glfwSwapBuffers(window);
 			glfwPollEvents();
 
@@ -94,30 +102,50 @@ int main()
 
 			frame_number += (int)(controller.getState() == SimulationState::SIMULATION_RUN);
 
-			if (frame_number == FRAMES_COUNT)
-			{
-				break;
-			}
 #endif 
-		}
-		catch (const std::exception& exception)
-		{
-			std::cout << exception.what() << std::endl;
-			ImGui_ImplOpenGL3_Shutdown();
-			ImGui_ImplGlfw_Shutdown();
-			ImPlot::DestroyContext();
-			ImGui::DestroyContext();
 
-			glfwDestroyWindow(window);
-			glfwTerminate();
-			return 0;
+#ifdef PERFORMANCE_TEST
+
+			need_close |= (frame_number == FRAMES_COUNT);
+#endif 
 		}
 	}
 
 #ifdef PERFORMANCE_TEST
 	const auto end = std::chrono::high_resolution_clock::now();
 	const int time = (int)std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-	std::cout << "Test results: " << FRAMES_COUNT << " frames at " << time << " milliseconds, framerate is " << (float)FRAMES_COUNT / (float)time * 1000.0f << std::endl;
+	const ModelSettings& settings = model.getSettings();
+
+	std::cout << "Settings: " << std::endl;
+	std::cout << "Constraints threads count " << THREADS_COUNT << std::endl;
+	std::cout << "Preferred partitions count " << settings.m_preferred_partitions_count << std::endl;
+	std::cout << "Iterations count " << settings.m_iterations_count << std::endl;
+
+	std::cout << std::endl;
+
+	std::cout << "Test results: " << std::endl;
+	std::cout << FRAMES_COUNT << " frames at " << time << " milliseconds" << std::endl;
+	std::cout << "Average framerate " << controller.getAverageFramerate() << std::endl;
+	std::cout << "Average evaluate forces time " << controller.getAverageEvaluateForcesTime() << std::endl;
+	std::cout << "Total evaluate forces time " << controller.getTotalEvaluateForcesTime() << std::endl;
+	std::cout << "Average r-tree creation time " << controller.getAverageRTreeCreationTime() << std::endl;
+	std::cout << "Total r-tree creation time " << controller.getTotalRTreeCreationTime() << std::endl;
+	std::cout << "Average find collision candidates time " << controller.getAverageFindCollisionCandidatesTime() << std::endl;
+	std::cout << "Total find collision candidates time " << controller.getTotalFindCollisionCandidatesTime() << std::endl;
+	std::cout << "Average check collision candidates time " << controller.getAverageCheckCollisionCandidatesTime() << std::endl;
+	std::cout << "Total check collision candidates time " << controller.getTotalCheckCollisionCandidatesTime() << std::endl;
+	std::cout << "Average collision constraints graph time " << controller.getAverageCollisionConstraintsGraphTime() << std::endl;
+	std::cout << "Total collision constraints graph time " << controller.getTotalCollisionConstraintsGraphTime() << std::endl;
+	std::cout << "Average user constraints graph time " << controller.getAverageUserConstraintsGraphTime() << std::endl;
+	std::cout << "Total user constraints graph time " << controller.getTotalUserConstraintsGraphTime() << std::endl;
+	std::cout << "Average evaluate constraints and friction time " << controller.getAverageEvaluateConstraintsTime() << std::endl;
+	std::cout << "Total evaluate constraints and friction time " << controller.getTotalEvaluateConstraintsTime() << std::endl;
+	std::cout << "Average update positions and speeds time " << controller.getAverageUpdatePositionsAndSpeedsTime() << std::endl;
+	std::cout << "Total update positions and speeds time " << controller.getTotalUpdatePositionsAndSpeedsTime() << std::endl;
+	std::cout << "Average update normals time " << controller.getAverageUpdateNormalsTime() << std::endl;
+	std::cout << "Total update normals time " << controller.getTotalUpdateNormalsTime() << std::endl;
+	std::cout << "Average collision constraints count " << controller.getAverageCollisionConstraitnsCount() << std::endl;
+	std::cout << "Total collision constraints count " << controller.getTotalCollisionConstraitnsCount() << std::endl;
 #endif 
 
 	ImGui_ImplOpenGL3_Shutdown();

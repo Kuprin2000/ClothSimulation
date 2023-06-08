@@ -5,7 +5,7 @@
 #include "r_tree.h"
 #include <stack>
 
-void RTree::insertVertices(const std::vector<glm::vec3>& vertices_coords, int first_vertex_index, ObjectType object_type, float gap)
+void RTree::insertVertices(const AlignedVector<glm::vec3>& vertices_coords, int first_vertex_index, ObjectType object_type, float gap)
 {
 	for (auto iter = vertices_coords.cbegin(); iter != vertices_coords.end(); ++iter)
 	{
@@ -22,7 +22,7 @@ void RTree::insertVertices(const std::vector<glm::vec3>& vertices_coords, int fi
 	}
 }
 
-void RTree::insertMovingVertices(const std::vector<glm::vec3>& old_vertices_coords, const std::vector<glm::vec3>& new_vertices_coords,
+void RTree::insertMovingVertices(const AlignedVector<glm::vec3>& old_vertices_coords, const AlignedVector<glm::vec3>& new_vertices_coords,
 	int first_vertex_index, ObjectType object_type, float gap)
 {
 	for (int i = 0; i < new_vertices_coords.size(); ++i)
@@ -40,7 +40,7 @@ void RTree::insertMovingVertices(const std::vector<glm::vec3>& old_vertices_coor
 	}
 }
 
-void RTree::insertTriangles(const std::vector<glm::vec3>& vertices_coords, const std::vector<glm::uvec3>& vertices_indices,
+void RTree::insertTriangles(const AlignedVector<glm::vec3>& vertices_coords, const AlignedVector<glm::uvec3>& vertices_indices,
 	int first_triangle_index, ObjectType object_type, float gap)
 {
 	glm::vec3 triangle_vertices_coords[3] = { glm::vec3() };
@@ -64,8 +64,8 @@ void RTree::insertTriangles(const std::vector<glm::vec3>& vertices_coords, const
 	}
 }
 
-void RTree::insertMovingTriangles(const std::vector<glm::vec3>& old_vertices_coords, const std::vector<glm::vec3>& new_vertices_coords,
-	const std::vector<glm::uvec3>& vertices_indices, int first_triangle_index, ObjectType object_type, float gap)
+void RTree::insertMovingTriangles(const AlignedVector<glm::vec3>& old_vertices_coords, const AlignedVector<glm::vec3>& new_vertices_coords,
+	const AlignedVector<glm::uvec3>& vertices_indices, int first_triangle_index, ObjectType object_type, float gap)
 {
 	glm::vec3 triangle_vertices_coords[3] = { glm::vec3() };
 	glm::vec3 triangle_vertices_new_coords[3] = { glm::vec3() };
