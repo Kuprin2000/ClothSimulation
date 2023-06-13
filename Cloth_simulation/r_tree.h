@@ -2,6 +2,7 @@
 #include <vector>
 #include "indices_utils.h"
 #include "bounding_box.h"
+#include "aligned_vector.h"
 
 class RTree
 {
@@ -168,15 +169,15 @@ public:
 		m_nodes.pushToNodes(RTree::ObjectType::NONE, NO_PRIMITIVE, PrimitiveType::NONE, {}, NO_PARENT, BoundingBox());
 	}
 
-	void insertVertices(const std::vector<glm::vec3>& vertices_coords, int first_vertex_index, RTree::ObjectType object_type, float gap);
+	void insertVertices(const AlignedVector<glm::vec3>& vertices_coords, int first_vertex_index, RTree::ObjectType object_type, float gap);
 
-	void insertMovingVertices(const std::vector<glm::vec3>& old_vertices_coords, const std::vector<glm::vec3>& new_vertices_coords, int first_vertex_index, RTree::ObjectType object_type, float gap);
+	void insertMovingVertices(const AlignedVector<glm::vec3>& old_vertices_coords, const AlignedVector<glm::vec3>& new_vertices_coords, int first_vertex_index, RTree::ObjectType object_type, float gap);
 
-	void insertTriangles(const std::vector<glm::vec3>& vertices_coords, const std::vector<glm::uvec3>& vertices_indices,
+	void insertTriangles(const AlignedVector<glm::vec3>& vertices_coords, const AlignedVector<glm::uvec3>& vertices_indices,
 		int first_triangle_index, RTree::ObjectType object_type, float gap);
 
-	void insertMovingTriangles(const std::vector<glm::vec3>& old_vertices_coords, const std::vector<glm::vec3>& new_vertices_coords,
-		const std::vector<glm::uvec3>& vertices_indices, int first_triangle_index, RTree::ObjectType object_type, float gap);
+	void insertMovingTriangles(const AlignedVector<glm::vec3>& old_vertices_coords, const AlignedVector<glm::vec3>& new_vertices_coords,
+		const AlignedVector<glm::uvec3>& vertices_indices, int first_triangle_index, RTree::ObjectType object_type, float gap);
 
 	_NODISCARD std::vector<int> findCollisionsWithBndBox(const BoundingBox& bnd_box);
 

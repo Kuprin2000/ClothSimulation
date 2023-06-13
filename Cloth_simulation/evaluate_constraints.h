@@ -4,8 +4,6 @@
 
 namespace EvaluateConstraintsMultithread
 {
-	void evaluateSewing(Cloth& cloth, ConstraintsBuffers& buffers, float alpha_correction_coeff, int iteration_number, int constraint_id);
-
 	void evaluateStretch(Cloth& cloth, float alpha_correction_coeff, int iteration_number, int constraint_id);
 
 	void evaluateRealisticStretch(Cloth& cloth, float alpha_correction_coeff, int iteration_number, int constraint_id);
@@ -14,6 +12,8 @@ namespace EvaluateConstraintsMultithread
 
 	void evaluateRealisticBending(Cloth& cloth, float alpha_correction_coeff, int iteration_number, int constraint_id);
 
+	void evaluateSewing(Cloth& cloth, ConstraintsBuffers& buffers, float alpha_correction_coeff, int iteration_number, int constraint_id);
+	
 	void evaluatePhantom(Cloth& cloth, ConstraintsBuffers& buffers, int constraint_id);
 
 	void evaluateFixedPosition(Cloth& cloth, ConstraintsBuffers& buffers, int constraint_id);

@@ -1,0 +1,8 @@
+*.smf
+Cloth_simulation/x64
+x64
+.vs/
+Cloth_simulation/imgui.ini
+Cloth_simulation/Intel® VTune™ Profiler Results
+GPUCache
+.vscode

@@ -36,7 +36,7 @@ public:
 
 	Cloth& operator=(Cloth&&) = default;
 
-	Cloth(const std::vector<glm::vec3>& coords, const std::vector<glm::uvec3>& indices, const std::vector<float>& opposite_masses,
+	Cloth(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices, const AlignedVector<float>& opposite_masses,
 		const MaterialProperties& material_props, int layer_number, bool use_realistic_stretch, bool use_realistic_bending);
 
 	// get count
@@ -92,12 +92,12 @@ public:
 			&m_vertices_data.m_coords[vertices_indices[2]] };
 	}
 
-	_NODISCARD std::vector<glm::vec3>& getCoords()
+	_NODISCARD AlignedVector<glm::vec3>& getCoords()
 	{
 		return m_vertices_data.m_coords;
 	}
 
-	_NODISCARD const std::vector<glm::vec3>& getCoords() const
+	_NODISCARD const AlignedVector<glm::vec3>& getCoords() const
 	{
 		return m_vertices_data.m_coords;
 	}
@@ -111,7 +111,7 @@ public:
 			&m_vertices_data.m_test_coords[vertices_indices[2]] };
 	}
 
-	_NODISCARD std::vector<glm::vec3>& getTestCoords()
+	_NODISCARD AlignedVector<glm::vec3>& getTestCoords()
 	{
 		return m_vertices_data.m_test_coords;
 	}
@@ -121,7 +121,7 @@ public:
 		m_vertices_data.m_test_coords[index] = coords;
 	}
 
-	void setTestCoords(const std::vector<glm::vec3>& test_coords)
+	void setTestCoords(const AlignedVector<glm::vec3>& test_coords)
 	{
 		m_vertices_data.m_test_coords = test_coords;
 	}
@@ -131,7 +131,7 @@ public:
 		return m_vertices_data.m_indices[index];
 	}
 
-	_NODISCARD const std::vector<glm::uvec3>& getIndices() const
+	_NODISCARD const AlignedVector<glm::uvec3>& getIndices() const
 	{
 		return m_vertices_data.m_indices;
 	}
@@ -141,12 +141,12 @@ public:
 		return m_vertices_data.m_normals[index];
 	}
 
-	_NODISCARD const std::vector<glm::vec3>& getNormals() const
+	_NODISCARD const AlignedVector<glm::vec3>& getNormals() const
 	{
 		return m_vertices_data.m_normals;
 	}
 
-	void setNormals(const std::vector<glm::vec3>& normals)
+	void setNormals(const AlignedVector<glm::vec3>& normals)
 	{
 		m_vertices_data.m_normals = normals;
 	}
@@ -156,7 +156,7 @@ public:
 		return m_vertices_data.m_opposite_masses[index];
 	}
 
-	_NODISCARD const std::vector<float>& getOppositeMasses() const
+	_NODISCARD const AlignedVector<float>& getOppositeMasses() const
 	{
 		return m_vertices_data.m_opposite_masses;
 	}
@@ -167,7 +167,7 @@ public:
 		return m_vertices_data.m_speeds[index];
 	}
 
-	_NODISCARD std::vector<glm::vec3>& getSpeeds()
+	_NODISCARD AlignedVector<glm::vec3>& getSpeeds()
 	{
 		return m_vertices_data.m_speeds;
 	}
@@ -177,7 +177,7 @@ public:
 		return m_vertices_data.m_host_and_original_vertices[index];
 	}
 
-	_NODISCARD std::vector<uint32_t>& getHostOrOriginalVertices()
+	_NODISCARD const AlignedVector<uint32_t>& getHostOrOriginalVertices() const
 	{
 		return m_vertices_data.m_host_and_original_vertices;
 	}
@@ -192,7 +192,7 @@ public:
 		return PrimitivesOwnershipUtils::TrianglePrimitivesOwnership(m_vertices_data.m_primitives_ownership[index]);
 	}
 
-	_NODISCARD const std::vector<uint8_t>& getTrianglesPrimitivesOwnership() const
+	_NODISCARD const AlignedVector<uint8_t>& getTrianglesPrimitivesOwnership() const
 	{
 		return m_vertices_data.m_primitives_ownership;
 	}
@@ -349,22 +349,22 @@ private:
 private:
 	struct
 	{
-		std::vector<glm::vec3> m_coords;	   // coordinates of real and phantom vertices
-		std::vector<glm::vec3> m_test_coords; // test coordinates of real and phantom vertices
-		std::vector<glm::uvec3> m_indices;	   // indices of real vertices
-		std::vector<glm::vec3> m_normals;	   // normals of real vertices
+		AlignedVector<glm::vec3> m_coords;			// coordinates of real and phantom vertices
+		AlignedVector<glm::vec3> m_test_coords;		// test coordinates of real and phantom vertices
+		AlignedVector<glm::uvec3> m_indices;		// indices of real vertices
+		AlignedVector<glm::vec3> m_normals;	   		// normals of real vertices
 
-		std::vector<float> m_opposite_masses; // opposite masses of real vertices
-		std::vector<glm::vec3> m_speeds;	  // speeds of real vertices
+		AlignedVector<float> m_opposite_masses; 	// opposite masses of real vertices
+		AlignedVector<glm::vec3> m_speeds;	  		// speeds of real vertices
 
 		// host of of real and phantom vertices
 		// 1) for real vertices we store:
 		// a) it's own index if it has no host
 		// b) it's host's index
 		// 2) for phantom vertex we store original vertex index
-		std::vector<uint32_t> m_host_and_original_vertices;
+		AlignedVector<uint32_t> m_host_and_original_vertices;
 
-		std::vector<uint8_t> m_primitives_ownership; // shows which vertices and edges each triangle owns
+		AlignedVector<uint8_t> m_primitives_ownership; // shows which vertices and edges each triangle owns
 
 	} m_vertices_data;
 
