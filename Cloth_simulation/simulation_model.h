@@ -153,7 +153,7 @@ private:
 
 	void findCollisionsCandidates();
 
-	void createSelfCollisionCandidates(const std::array<int, 2>& triangles);
+	void createSelfCollisionCandidates(int triangle_a, int triangle_b);
 
 	void createColliderCollisionCandidate(int cloth_triangle_id, int collider_triangle_id);
 
@@ -183,7 +183,7 @@ private:
 	Collider m_collider;
 	RTree m_r_tree;
 
-	AlignedVector<int> m_collisions_candidates[CONSTRAINT_TYPES_COUNT];
+	// AlignedVector<int> m_collisions_candidates[CONSTRAINT_TYPES_COUNT];
 	ConstraintsBuffers m_collisions_constraints;
 	ConstraintsGraph m_collisions_constraints_graph;
 
