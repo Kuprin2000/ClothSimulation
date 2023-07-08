@@ -3,6 +3,8 @@
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
 #include "constraints_graph.h"
+#include "defines.h"
+#include "bool_vector.h"
 #include <cmath>
 #include <algorithm>
 
@@ -25,7 +27,7 @@ void ConstraintsGraph::setConstraints(ConstraintsBuffers& constraints, int verti
 
 		if (m_settings.m_need_insert_phantoms)
 		{
-			const std::vector<std::set<int>> cliques = bronKerboschDegeneracy();
+			const std::vector<MathUtils::FastSet> cliques = bronKerboschDegeneracy();
 			if (!cliques.empty() && (cliques[0].size() <= CONSTRAINT_UINT_COUNT[(int)ConstraintType::PHANTOM_VERTICES]))
 			{
 				replaceVertices(cliques);
@@ -37,6 +39,19 @@ void ConstraintsGraph::setConstraints(ConstraintsBuffers& constraints, int verti
 		}
 
 		colorGraph();
+
+		//for (int i = 0; i < m_nodes.getNodesCount(); ++i)
+		//{
+		//	const int node_color = m_nodes.getColor(i);
+		//	const std::vector<int> &neighbors = m_nodes.getNeighbors(i).getValues();
+		//	for (auto neighbour : neighbors)
+		//	{
+		//		if (node_color == m_nodes.getColor(neighbour))
+		//		{
+		//			throw std::exception("Bad color");
+		//		}
+		//	}
+		//}
 	}
 
 	createMap();
@@ -78,30 +93,30 @@ void ConstraintsGraph::createEdges()
 	}
 }
 
-std::vector<std::set<int>> ConstraintsGraph::bronKerboschDegeneracy()
+std::vector<MathUtils::FastSet> ConstraintsGraph::bronKerboschDegeneracy()
 {
 	// you can read about this algorithm in "Accelerating the Bron-Kerbosch
 	// Algorithm for Maximal Clique Enumeration Using GPUs"
 
 	const std::vector<int> sorted_nodes = sortDegeneracy();
-	std::set<int> P = { sorted_nodes.begin(), sorted_nodes.end() };
-	std::set<int> X = {};
-	std::set<int> singleton = {};
-	std::vector<std::set<int>> result = {};
+	MathUtils::FastSet P(sorted_nodes, m_nodes.getNodesCount());
+	MathUtils::FastSet X(m_nodes.getNodesCount());
+	MathUtils::FastSet singleton(m_nodes.getNodesCount());
+	std::vector<MathUtils::FastSet> result;
 
 	for (const auto node : sorted_nodes)
 	{
 		singleton = { node };
 		P.erase(node);
 
-		bronKerboschPivot(singleton, MathUtils::intersectSets(&P, &m_nodes.getNeighbors(node)),
-			MathUtils::intersectSets(&X, &m_nodes.getNeighbors(node)), result);
+		bronKerboschPivot(singleton, MathUtils::intersectSets(P, m_nodes.getNeighbors(node)),
+			MathUtils::intersectSets(X, m_nodes.getNeighbors(node)), result);
 
 		X.insert(node);
 	}
 
 	std::sort(result.begin(), result.end(),
-		[](const std::set<int>& a, const std::set<int>& b) -> bool
+		[](const MathUtils::FastSet& a, const MathUtils::FastSet& b) -> bool
 		{
 			return a.size() > b.size();
 		});
@@ -109,14 +124,14 @@ std::vector<std::set<int>> ConstraintsGraph::bronKerboschDegeneracy()
 	return result;
 }
 
-void ConstraintsGraph::bronKerboschPivot(const std::set<int>& clique, std::set<int> candidates,
-	std::set<int> duplicates, std::vector<std::set<int>>& results) const
+void ConstraintsGraph::bronKerboschPivot(const MathUtils::FastSet& clique, MathUtils::FastSet candidates,
+	MathUtils::FastSet duplicates, std::vector<MathUtils::FastSet>& results) const
 {
 	// you can read about this algorithm in "Accelerating the Bron-Kerbosch
 	// Algorithm for Maximal Clique Enumeration Using GPUs"
 
-	const std::set<int> united_sets = MathUtils::uniteSets(&candidates, &duplicates);
-	if (united_sets.empty())
+	const MathUtils::FastSet united_sets = MathUtils::uniteSets(candidates, duplicates);
+	if (!united_sets.size())
 	{
 		if (clique.size() > m_settings.m_preferred_partitions_count)
 		{
@@ -125,13 +140,14 @@ void ConstraintsGraph::bronKerboschPivot(const std::set<int>& clique, std::set<i
 		return;
 	}
 
-	std::set<int> intersected_sets = {};
+	MathUtils::FastSet intersected_sets(m_nodes.getNodesCount());
 	int pivot = 0;
 	int max_size = INT_MIN;
 
-	for (auto iter = united_sets.begin(); iter != united_sets.end(); ++iter)
+	const std::vector<int>& united_sets_values = united_sets.getValues();
+	for (auto iter = united_sets_values.begin(); iter != united_sets_values.end(); ++iter)
 	{
-		intersected_sets = MathUtils::intersectSets(&candidates, &m_nodes.getNeighbors(*iter));
+		intersected_sets = MathUtils::intersectSets(candidates, m_nodes.getNeighbors(*iter));
 		if ((int)intersected_sets.size() > max_size)
 		{
 			max_size = (int)intersected_sets.size();
@@ -139,19 +155,20 @@ void ConstraintsGraph::bronKerboschPivot(const std::set<int>& clique, std::set<i
 		}
 	}
 
-	std::set<int> subtracted_sets = MathUtils::subtractSet(candidates, m_nodes.getNeighbors(pivot));
+	MathUtils::FastSet subtracted_sets = MathUtils::subtractSet(candidates, m_nodes.getNeighbors(pivot));
 
-	std::set<int> singleton = {};
-	while (!subtracted_sets.empty())
+	MathUtils::FastSet singleton(m_nodes.getNodesCount());
+	while (subtracted_sets.size())
 	{
-		singleton = { *subtracted_sets.begin() };
-		const std::set<int>& current_node_neighbors = m_nodes.getNeighbors(*subtracted_sets.begin());
+		singleton.clear();
+		singleton.insert(subtracted_sets.getValues()[0]);
+		const MathUtils::FastSet &current_node_neighbors = m_nodes.getNeighbors(subtracted_sets.getValues()[0]);
 
-		bronKerboschPivot(MathUtils::uniteSets(&clique, &singleton), MathUtils::intersectSets(&candidates, &current_node_neighbors),
-			MathUtils::intersectSets(&duplicates, &current_node_neighbors), results);
+		bronKerboschPivot(MathUtils::uniteSets(clique, singleton), MathUtils::intersectSets(candidates, current_node_neighbors),
+			MathUtils::intersectSets(duplicates, current_node_neighbors), results);
 
 		candidates = MathUtils::subtractSet(candidates, singleton);
-		duplicates = MathUtils::uniteSets(&duplicates, &singleton);
+		duplicates = MathUtils::uniteSets(duplicates, singleton);
 		subtracted_sets = MathUtils::subtractSet(candidates, m_nodes.getNeighbors(pivot));
 	}
 }
@@ -171,41 +188,45 @@ std::vector<int> ConstraintsGraph::sortDegeneracy()
 	{
 		m_nodes.setIsOrdered(false, i);
 
-		node_neighbors_count = (int)m_nodes.getNeighbors(i).size();
+		node_neighbors_count = m_nodes.getNeighborsCount(i);
 		m_nodes.setCounter(node_neighbors_count, i);
 
 		max_neighbor_count = std::max(max_neighbor_count, node_neighbors_count);
 	}
 
-	std::vector<std::set<int>> buckets(max_neighbor_count + 1);
+	std::vector<MathUtils::FastSet> buckets(max_neighbor_count + 1);
+	for (int i = 0; i < buckets.size(); ++i)
+	{
+		buckets[i] = MathUtils::FastSet(m_nodes.getNodesCount());
+	}
 
 	for (int i = 0; i < m_nodes.getNodesCount(); ++i)
 	{
-		buckets[(int)m_nodes.getNeighbors(i).size()].insert(i);
+		buckets[m_nodes.getNeighborsCount(i)].insert(i);
 	}
 
-	std::set<int>* current_basket = nullptr;
+	MathUtils::FastSet* current_basket = nullptr;
 	int current_node = 0;
 
 	for (int i = 0; i < m_nodes.getNodesCount(); ++i)
 	{
 		for (auto& basket : buckets)
 		{
-			if (!basket.empty())
+			if (basket.size())
 			{
 				current_basket = &basket;
 				break;
 			}
 		}
 
-		current_node = *current_basket->begin();
+		current_node = current_basket->getValues()[0];
 		current_basket->erase(current_node);
 
 		result[insert_index] = current_node;
 		--insert_index;
 		m_nodes.setIsOrdered(true, current_node);
 
-		const std::set<int>& current_node_neighbors = m_nodes.getNeighbors(current_node);
+		const std::vector<int>& current_node_neighbors = m_nodes.getNeighbors(current_node).getValues();
 		for (const auto neighbor : current_node_neighbors)
 		{
 			if (m_nodes.getIsOrdered(neighbor))
@@ -224,25 +245,26 @@ std::vector<int> ConstraintsGraph::sortDegeneracy()
 	return result;
 }
 
-int ConstraintsGraph::findCommonVertex(const std::set<int>& clique) const
+int ConstraintsGraph::findCommonVertex(const MathUtils::FastSet& clique) const
 {
-	const uint32_t* current_node_vertices = m_nodes.getEnabledConstraintVertices(*clique.begin());
-	int current_node_vertices_count = CONSTRAINT_UINT_COUNT[m_nodes.getEnabledConstraintType(*clique.begin())];
-	std::set<uint32_t> common_vertices = { current_node_vertices, current_node_vertices + current_node_vertices_count };
+	const uint32_t* current_node_vertices = m_nodes.getEnabledConstraintVertices(clique.getValues()[0]);
+	int current_node_vertices_count = CONSTRAINT_UINT_COUNT[m_nodes.getEnabledConstraintType(clique.getValues()[0])];
+	MathUtils::FastSet common_vertices({ current_node_vertices, current_node_vertices + current_node_vertices_count }, m_original_vertices_count);
 
-	for (auto node : clique)
+	const std::vector<int>& nodes = clique.getValues();
+	for (auto node : nodes)
 	{
 		current_node_vertices = m_nodes.getEnabledConstraintVertices(node);
 		current_node_vertices_count = CONSTRAINT_UINT_COUNT[m_nodes.getEnabledConstraintType(node)];
 
-		const std::set<uint32_t> tmp_set = { current_node_vertices, current_node_vertices + current_node_vertices_count };
-		common_vertices = MathUtils::intersectSets(&common_vertices, &tmp_set);
+		const MathUtils::FastSet tmp_set({ current_node_vertices, current_node_vertices + current_node_vertices_count }, m_original_vertices_count);
+		common_vertices = MathUtils::intersectSets(common_vertices, tmp_set);
 	}
 
-	return common_vertices.empty() ? -1 : *common_vertices.begin();
+	return !common_vertices.size() ? -1 : common_vertices.getValues()[0];
 }
 
-void ConstraintsGraph::replaceVertices(const std::vector<std::set<int>>& cliques)
+void ConstraintsGraph::replaceVertices(const std::vector<MathUtils::FastSet>& cliques)
 {
 	int vertex_to_replace = 0;
 	int phantom_vertex = m_original_vertices_count;
@@ -258,7 +280,8 @@ void ConstraintsGraph::replaceVertices(const std::vector<std::set<int>>& cliques
 
 		m_replaced_vertices.emplace_back((uint32_t)vertex_to_replace, (uint32_t)phantom_vertex, (uint8_t)clique.size());
 
-		for (auto node : clique)
+		const std::vector<int>& nodes = clique.getValues();
+		for (auto node : nodes)
 		{
 			node_vertices = m_nodes.getEnabledConstraintVertices(node);
 			for (int i = 0; i < CONSTRAINT_UINT_COUNT[(int)m_nodes.getEnabledConstraintType(node)]; ++i)
@@ -297,53 +320,110 @@ void ConstraintsGraph::generatePhantomConstraintsBuffers()
 	}
 }
 
-void ConstraintsGraph::colorGraph()
+void ConstraintsGraph::assignColors(const std::vector<int>& conflicts, int max_degree, int thread_id)
 {
-	// we use greedy coloring algorithm. You can read about it in
-	// "Scalable Partitioning for Parallel Position Based Dynamics"
-
-	const std::vector<int> sorted_nodes = sortDegeneracy();
-	std::vector<bool> color_is_forbidden;
-	int neighbour_color = 0;
-	int node_color = 0;
-
-	m_colors_count = 1;
-	for (auto node : sorted_nodes)
+	for (int i = thread_id; i < conflicts.size(); i += THREADS_COUNT)
 	{
-		// we color node to NO_COLOR to show that is can be put to any partition
-		if (m_nodes.getNeighbors(node).empty())
+		// we keep node colored to NO_COLOR to show that is can be put to any partition
+		const int node = conflicts[i];
+		if (!m_nodes.getNeighborsCount(node))
 		{
-			m_nodes.setColor(NO_COLOR, node);
 			continue;
 		}
 
-		for (int i = 0; i < (int)color_is_forbidden.size(); ++i)
-		{
-			color_is_forbidden[i] = false;
-		}
+		BoolVector::BoolVector color_is_forbidden;
+		color_is_forbidden.resize(max_degree);
+		int neighbour_color = 0;
+		const std::vector<int> &node_neighbors = m_nodes.getNeighbors(node).getValues();
 
-		const std::set<int>& node_neighbors = m_nodes.getNeighbors(node);
 		for (const auto neighbor : node_neighbors)
 		{
 			neighbour_color = m_nodes.getColor(neighbor);
-			color_is_forbidden.resize(std::max((neighbour_color == NO_COLOR) ? 0 : (neighbour_color + 1), (int)color_is_forbidden.size()));
-
 			if (neighbour_color != NO_COLOR)
 			{
-				color_is_forbidden[neighbour_color] = true;
+				color_is_forbidden.setValue(true, neighbour_color);
 			}
 		}
 
-		node_color = 0;
+		int node_color = 0;
 		while (node_color < (int)color_is_forbidden.size() && color_is_forbidden[node_color])
 		{
 			++node_color;
 		}
 
-		m_nodes.setColor((uint8_t)node_color, node);
-
-		m_colors_count = std::max(m_colors_count, node_color + 1);
+		m_nodes.setColor((int16_t)node_color, node);
 	}
+
+#pragma omp barrier
+}
+
+void ConstraintsGraph::detectConflicts(const std::vector<int>& conflicts, AlignedVector::AlignedVector<MathUtils::FastSet>& new_conflicts, int thread_id) const
+{
+	for (int i = thread_id; i < conflicts.size(); i += THREADS_COUNT)
+	{
+		const int node = conflicts[i];
+		const std::vector<int>& node_neighbour = m_nodes.getNeighbors(node).getValues();
+		for (auto neighbour : node_neighbour)
+		{
+			if (m_nodes.getColor(node) == m_nodes.getColor(neighbour) && neighbour < node)
+			{
+				new_conflicts[thread_id].insert(node);
+			}
+		}
+	}
+
+#pragma omp barrier
+}
+
+void ConstraintsGraph::colorGraph()
+{
+	std::vector<int> conflicts;
+	int max_degree = 0;
+	for (int i = 0; i < m_nodes.getNodesCount(); ++i)
+	{
+		conflicts.push_back(i);
+		max_degree = std::max(max_degree, m_nodes.getNeighborsCount(i));
+	}
+
+	AlignedVector::AlignedVector<MathUtils::FastSet> new_conflicts(THREADS_COUNT);
+	for (int i = 0; i < THREADS_COUNT; ++i)
+	{
+		new_conflicts[i] = MathUtils::FastSet(m_nodes.getNodesCount());
+	}
+
+	bool no_conflicts = false;
+	MathUtils::FastSet united_conflicts(m_original_vertices_count + m_phantom_vertices_count);
+#pragma omp parallel
+	{
+		const int thread_id = omp_get_thread_num();
+
+		while (!no_conflicts)
+		{
+			assignColors(conflicts, max_degree, thread_id);
+			detectConflicts(conflicts, new_conflicts, thread_id);
+
+#pragma omp single
+			{
+				united_conflicts.clear();
+				for (auto& elem : new_conflicts)
+				{
+					united_conflicts = MathUtils::uniteSets(united_conflicts, elem);
+					elem.clear();
+				}
+
+				conflicts = united_conflicts.getValues();
+				no_conflicts = conflicts.empty();
+			}
+		}
+	}
+
+	m_colors_count = 0;
+	for (int i = 0; i < m_nodes.getNodesCount(); ++i)
+	{
+		m_colors_count = std::max(m_colors_count, (int)m_nodes.getColor(i));
+	}
+
+	++m_colors_count;
 }
 
 void ConstraintsGraph::createMap()
@@ -354,7 +434,7 @@ void ConstraintsGraph::createMap()
 	std::array<std::vector<int>, CONSTRAINT_TYPES_COUNT> independent_tasks = {};
 
 	// original constraints
-	int8_t color = 0;
+	int16_t color = 0;
 	uint8_t type = 0u;
 	for (int i = 0; i < m_nodes.getNodesCount(); ++i)
 	{

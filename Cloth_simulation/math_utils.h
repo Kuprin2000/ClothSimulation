@@ -1,35 +1,141 @@
 #pragma once
 #include <vector>
-#include <set>
 #include <array>
 #include <omp.h>
 #include "primitives_ownership_utils.h"
 #include "glm/glm.hpp"
+#include "bool_vector.h"
 
 namespace MathUtils
 {
 	static constexpr float PI = 3.14159265f;
 
-	template <class T>
-	_NODISCARD inline std::set<T> uniteSets(const std::set<T>* set_a, const std::set<T>* set_b)
+	class FastSet
 	{
-		std::set<T> result = *set_a;
-		result.insert(set_b->begin(), set_b->end());
+	public:
+		FastSet() = default;
+
+		FastSet(int max_value)
+		{
+			m_has_value.resize(max_value + 1);
+		}
+
+		FastSet(const std::vector<int>& values, int max_value)
+		{
+			m_values = values;
+			m_has_value.resize(max_value + 1);
+
+			for (auto elem : values)
+			{
+				m_has_value.setValue(true, elem);
+			}
+		}
+
+		_NODISCARD int getMaxValue() const
+		{
+			return (int)m_has_value.size();
+		}
+
+		_NODISCARD size_t size() const
+		{
+			return m_values.size();
+		}
+
+		void updateMaxValue(int new_value)
+		{
+			m_has_value.resize(new_value + 1);
+		}
+
+		_NODISCARD const std::vector<int>& getValues() const
+		{
+			return m_values;
+		}
+
+		_NODISCARD bool contains(int value) const
+		{
+			return m_has_value.size() > value && m_has_value[value];
+		}
+
+		void insert(int value)
+		{
+			if (!m_has_value[value])
+			{
+				m_values.push_back(value);
+				m_has_value.setValue(true, value);
+			}
+		}
+
+		void insert(const std::vector<int>& values)
+		{
+			for (auto elem : values)
+			{
+				if (!m_has_value[elem])
+				{
+					m_values.push_back(elem);
+					m_has_value.setValue(true, elem);
+				}
+			}
+		}
+
+		void erase(int value)
+		{
+			if (m_has_value[value])
+			{
+				m_values.erase(std::find(m_values.begin(), m_values.end(), value));
+				m_has_value.setValue(false, value);
+			}
+		}
+
+		void erase(const std::vector<int>& values)
+		{
+			for (auto elem : values)
+			{
+				if (m_has_value[elem])
+				{
+					m_values.erase(std::find(m_values.begin(), m_values.end(), elem));
+					m_has_value.setValue(false, elem);
+				}
+			}
+		}
+
+		void clear()
+		{
+			m_values.clear();
+			m_has_value.fill(false);
+		}
+
+	private:
+		std::vector<int> m_values;
+		BoolVector::BoolVector m_has_value;
+	};
+
+	_NODISCARD inline FastSet uniteSets(const FastSet& set_a, const FastSet& set_b)
+	{
+		const FastSet& max_set = (set_a.size() > set_b.size()) ? set_a : set_b;
+		const FastSet& min_set = (set_a.size() > set_b.size()) ? set_b : set_a;
+
+		FastSet result(max_set.getValues(), std::max(set_a.getMaxValue(), set_b.getMaxValue()));
+
+		const std::vector<int> min_set_values = min_set.getValues();
+		for (auto elem : min_set_values)
+		{
+			result.insert(elem);
+		}
 
 		return result;
 	}
 
-	template <class T>
-	_NODISCARD inline std::set<T> intersectSets(const std::set<T>* set_a, const std::set<T>* set_b)
+	_NODISCARD inline FastSet intersectSets(const FastSet& set_a, const FastSet& set_b)
 	{
-		const std::set<T>* max_set = (set_a->size() > set_b->size()) ? set_a : set_b;
-		const std::set<T>* min_set = (set_a->size() > set_b->size()) ? set_b : set_a;
+		const FastSet& max_set = (set_a.size() > set_b.size()) ? set_a : set_b;
+		const FastSet& min_set = (set_a.size() > set_b.size()) ? set_b : set_a;
 
-		std::set<T> result;
+		FastSet result(std::max(set_a.getMaxValue(), set_b.getMaxValue()));
 
-		for (const auto& elem : *min_set)
+		const std::vector<int> min_set_values = min_set.getValues();
+		for (auto elem : min_set_values)
 		{
-			if (max_set->contains(elem))
+			if (max_set.contains(elem))
 			{
 				result.insert(elem);
 			}
@@ -38,11 +144,12 @@ namespace MathUtils
 		return result;
 	}
 
-	template <class T>
-	_NODISCARD inline std::set<T> subtractSet(const std::set<T>& set_a, const std::set<T>& set_b)
+	_NODISCARD inline FastSet subtractSet(const FastSet& set_a, const FastSet& set_b)
 	{
-		std::set<T> result;
-		for (const auto& elem : set_a)
+		FastSet result(std::max(set_a.getMaxValue(), set_b.getMaxValue()));
+
+		const std::vector<int> set_a_values = set_a.getValues();
+		for (auto elem : set_a_values)
 		{
 			if (!set_b.contains(elem))
 			{
@@ -285,8 +392,8 @@ namespace MathUtils
 		};
 	}
 
-	inline void calculateNormals(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices,
-		const AlignedVector<uint8_t>& primitives_ownership, AlignedVector<glm::vec3>& normals)
+	inline void calculateNormals(const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::uvec3>& indices,
+		const AlignedVector::AlignedVector<uint8_t>& primitives_ownership, AlignedVector::AlignedVector<glm::vec3>& normals)
 	{
 		for (int i = 0; i < normals.size(); ++i)
 		{

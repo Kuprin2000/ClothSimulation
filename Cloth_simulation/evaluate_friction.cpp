@@ -15,7 +15,7 @@ namespace EvaluateFrictionMultithreaded
 		const SelfVertexTriangleCollision* constraint = (SelfVertexTriangleCollision*)buffers.getDataBlock(constraint_id);
 
 		// SELF_VERTEX_TRIANGLE_COLLISION or SELF_VERTEX_TRIANGLE_COLLISION_BETWEEN_LAYERS: 1 - vertex, 3 - triangle
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION];
 
 		// here we can deal only with real vertices
@@ -80,7 +80,7 @@ namespace EvaluateFrictionMultithreaded
 		const ColliderVertexTriangleCollision* constraint = (ColliderVertexTriangleCollision*)buffers.getDataBlock(constraint_id);
 
 		// COLLIDER_VERTEX_TRIANGLE_COLLISION: 1 - one vertex of the cloth, 1 - zeros
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION];
 
 		// here we can deal only with real vertices

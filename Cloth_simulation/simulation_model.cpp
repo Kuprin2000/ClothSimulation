@@ -249,9 +249,9 @@ const ExecutionStatistic& SimulationModel::simulationStep(float time_delta)
 
 float SimulationModel::evaluateExternalForces(float time_delta)
 {
-	const AlignedVector<glm::vec3>& coords = m_cloth.getCoords();
-	AlignedVector<glm::vec3>& test_coords = m_cloth.getTestCoords();
-	const AlignedVector<glm::vec3> speeds = m_cloth.getSpeeds();
+	const AlignedVector::AlignedVector<glm::vec3>& coords = m_cloth.getCoords();
+	AlignedVector::AlignedVector<glm::vec3>& test_coords = m_cloth.getTestCoords();
+	const AlignedVector::AlignedVector<glm::vec3> speeds = m_cloth.getSpeeds();
 
 	const float gravity_movement = -time_delta * time_delta * m_settings.m_gravity;
 
@@ -512,8 +512,6 @@ void SimulationModel::evaluateConstraints(float time_delta)
 
 void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, int iteration)
 {
-	const int thread_id = omp_get_thread_num();
-
 	const std::vector<int>* tasks = nullptr;
 	const ConstraintsBuffers& buffer = m_cloth.getInternalConstraints();
 	const TasksMap& tasks_map = m_cloth_constraints_graph.getTasksMap();
@@ -521,7 +519,8 @@ void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, 
 	for (int partition = 0; partition < tasks_map.getPartitionsCount() - 1; ++partition)
 	{
 		tasks = &tasks_map.getTasks(partition);
-		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
+#pragma omp for
+		for (int i = 0; i < tasks->size(); ++i)
 		{
 			switch (buffer.getConstraintType((*tasks)[i]))
 			{
@@ -547,8 +546,6 @@ void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, 
 				throw std::exception("Wrong constraint type");
 			}
 		}
-
-#pragma omp barrier
 	}
 
 #pragma omp single
@@ -563,16 +560,15 @@ void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, 
 
 void SimulationModel::evaluateCollisionConstraints(float alpha_correction_coeff, int iteration)
 {
-	const int thread_id = omp_get_thread_num();
-
 	const std::vector<int>* tasks = nullptr;
 	const ConstraintsBuffers& buffer = m_collisions_constraints;
 	const TasksMap& tasks_map = m_collisions_constraints_graph.getTasksMap();
 
-	for (int partition = 0; partition < tasks_map.getPartitionsCount(); ++partition)
+	for (int partition = 0; partition < tasks_map.getPartitionsCount() - 1; ++partition)
 	{
 		tasks = &tasks_map.getTasks(partition);
-		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
+#pragma omp for
+		for (int i = 0; i < tasks->size(); ++i)
 		{
 			switch (buffer.getConstraintType((*tasks)[i]))
 			{
@@ -596,23 +592,20 @@ void SimulationModel::evaluateCollisionConstraints(float alpha_correction_coeff,
 				break;
 			}
 		}
-
-#pragma omp barrier
 	}
 }
 
 void SimulationModel::evaluateUserConstraints(float alpha_correction_coeff, int iteration)
 {
-	const int thread_id = omp_get_thread_num();
-
 	const std::vector<int>* tasks = nullptr;
 	const ConstraintsBuffers& buffer = m_user_defined_constraints;
 	const TasksMap& tasks_map = m_user_defined_constraints_graph.getTasksMap();
 
-	for (int partition = 0; partition < tasks_map.getPartitionsCount(); ++partition)
+	for (int partition = 0; partition < tasks_map.getPartitionsCount() - 1; ++partition)
 	{
 		tasks = &tasks_map.getTasks(partition);
-		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
+#pragma omp for
+		for (int i = 0; i < tasks->size(); ++i)
 		{
 			switch (buffer.getConstraintType((*tasks)[i]))
 			{
@@ -630,23 +623,20 @@ void SimulationModel::evaluateUserConstraints(float alpha_correction_coeff, int 
 				break;
 			}
 		}
-
-#pragma omp barrier
 	}
 }
 
 void SimulationModel::evaluateFriction(float time_delta)
 {
-	const int thread_id = omp_get_thread_num();
-
 	const std::vector<int>* tasks = nullptr;
 	const ConstraintsBuffers& buffer = m_collisions_constraints;
 	const TasksMap& tasks_map = m_collisions_constraints_graph.getTasksMap();
 
-	for (int partition = 0; partition < tasks_map.getPartitionsCount(); ++partition)
+	for (int partition = 0; partition < tasks_map.getPartitionsCount() - 1; ++partition)
 	{
 		tasks = &tasks_map.getTasks(partition);
-		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
+#pragma omp for
+		for (int i = 0; i < tasks->size(); ++i)
 		{
 			switch (buffer.getConstraintType((*tasks)[i]))
 			{
@@ -665,8 +655,6 @@ void SimulationModel::evaluateFriction(float time_delta)
 				break;
 			}
 		}
-
-#pragma omp barrier
 	}
 }
 
@@ -677,9 +665,9 @@ void SimulationModel::updatePositionsAndSpeeds(float time_delta)
 
 	// update vertices speeds
 	const float speeds_coefficient = m_settings.m_speed_damping_coefficient / time_delta;
-	AlignedVector<glm::vec3>& coords = m_cloth.getCoords();
-	AlignedVector<glm::vec3>& test_coords = m_cloth.getTestCoords();
-	AlignedVector<glm::vec3>& speeds = m_cloth.getSpeeds();
+	AlignedVector::AlignedVector<glm::vec3>& coords = m_cloth.getCoords();
+	AlignedVector::AlignedVector<glm::vec3>& test_coords = m_cloth.getTestCoords();
+	AlignedVector::AlignedVector<glm::vec3>& speeds = m_cloth.getSpeeds();
 
 	m_cloth.syncSlaveVertices();
 

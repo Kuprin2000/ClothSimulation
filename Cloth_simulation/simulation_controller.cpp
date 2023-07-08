@@ -189,8 +189,8 @@ void SimulationController::moveCamera(MovementDirection direction, bool fast)
 
 bool SimulationController::loadCloth()
 {
-	AlignedVector<glm::vec3> coords;
-	AlignedVector<glm::uvec3> indices;
+	AlignedVector::AlignedVector<glm::vec3> coords;
+	AlignedVector::AlignedVector<glm::uvec3> indices;
 	if (!readGeometryFromFile(coords, indices, m_found_files[m_new_cloth_parameters.m_file_index]))
 	{
 		return false;
@@ -205,7 +205,7 @@ bool SimulationController::loadCloth()
 	}
 
 	const float vertex_mass = cloth_square * m_new_cloth_parameters.m_material_props.m_density / coords.size();
-	AlignedVector<float> opposite_masses(coords.size(), vertex_mass);
+	AlignedVector::AlignedVector<float> opposite_masses(coords.size(), vertex_mass);
 
 	std::vector<Cloth> new_cloth;
 	new_cloth.emplace_back(std::move(coords), std::move(indices), std::move(opposite_masses), m_new_cloth_parameters.m_material_props,
@@ -217,8 +217,8 @@ bool SimulationController::loadCloth()
 
 bool SimulationController::loadCollider()
 {
-	AlignedVector<glm::vec3> coords;
-	AlignedVector<glm::uvec3> indices;
+	AlignedVector::AlignedVector<glm::vec3> coords;
+	AlignedVector::AlignedVector<glm::uvec3> indices;
 	if (!readGeometryFromFile(coords, indices, m_found_files[m_new_collider_parameters.m_file_index]))
 	{
 		return false;
@@ -281,7 +281,7 @@ bool SimulationController::loadColliderCandidate()
 	return true;
 }
 
-float SimulationController::getAverageEdgeLength(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices) const
+float SimulationController::getAverageEdgeLength(const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::uvec3>& indices) const
 {
 	float result = 0.0f;
 	for (const auto& triangle : indices)
@@ -294,7 +294,7 @@ float SimulationController::getAverageEdgeLength(const AlignedVector<glm::vec3>&
 	return result / indices.size() / 3.0f;
 }
 
-void SimulationController::transformCoords(const glm::vec3& rotations, const glm::vec3& size, const glm::vec3& translation, AlignedVector<glm::vec3>& coords) const
+void SimulationController::transformCoords(const glm::vec3& rotations, const glm::vec3& size, const glm::vec3& translation, AlignedVector::AlignedVector<glm::vec3>& coords) const
 {
 	glm::mat4x4 rotation = glm::identity<glm::mat4x4>();
 	rotation = glm::rotate(rotation, glm::radians(rotations[0]), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -309,7 +309,7 @@ void SimulationController::transformCoords(const glm::vec3& rotations, const glm
 	}
 }
 
-bool SimulationController::readGeometryFromFile(AlignedVector<glm::vec3>& coords, AlignedVector<glm::uvec3>& indices, const std::string& file_path) const
+bool SimulationController::readGeometryFromFile(AlignedVector::AlignedVector<glm::vec3>& coords, AlignedVector::AlignedVector<glm::uvec3>& indices, const std::string& file_path) const
 {
 	std::ifstream stream;
 	stream.open(file_path.c_str());
