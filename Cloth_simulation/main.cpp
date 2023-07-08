@@ -10,6 +10,7 @@
 #include "implot/implot.h"
 #include "simulation_controller.h"
 #include "defines.h"
+#include "bool_vector.h"
 
 #ifdef PERFORMANCE_TEST
 #include <chrono>

@@ -22,7 +22,7 @@ namespace PrimitivesOwnershipUtils
 		} structure;
 	};
 
-	_NODISCARD AlignedVector<uint8_t> generatePrimitivesOwnership(const AlignedVector<glm::uvec3>& indices);
+	_NODISCARD AlignedVector::AlignedVector<uint8_t> generatePrimitivesOwnership(const AlignedVector::AlignedVector<glm::uvec3>& indices);
 
 	_NODISCARD inline bool triangleOwnsTheVertex(int vertex_local_index, TrianglePrimitivesOwnership primitives_ownership)
 	{

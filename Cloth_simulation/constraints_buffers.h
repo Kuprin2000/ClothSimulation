@@ -177,7 +177,7 @@ public:
 		m_constraints_types[constraint_id] = (uint8_t)new_type;
 	}
 
-	_NODISCARD const AlignedVector<uint8_t>& getConstraintTypes() const
+	_NODISCARD const AlignedVector::AlignedVector<uint8_t>& getConstraintTypes() const
 	{
 		return m_constraints_types;
 	}
@@ -187,7 +187,7 @@ public:
 		return m_is_disabled[constraint_id];
 	}
 
-	_NODISCARD const AlignedVector<uint8_t>& getIsDisabled() const
+	_NODISCARD const AlignedVector::AlignedVector<uint8_t>& getIsDisabled() const
 	{
 		return m_is_disabled;
 	}
@@ -237,11 +237,11 @@ public:
 private:
 	int m_constraints_count = 0;
 	std::array<int, CONSTRAINT_TYPES_COUNT> m_stored_constraints_per_type = { 0 };
-	AlignedVector<uint8_t> m_constraints_types;
+	AlignedVector::AlignedVector<uint8_t> m_constraints_types;
 
-	AlignedVector<uint8_t> m_is_disabled;
+	AlignedVector::AlignedVector<uint8_t> m_is_disabled;
 
 	uint32_t m_occupied_bytes_count = 0u;
-	AlignedVector<uint32_t> m_bytes_offsets;
-	AlignedVector<uint8_t> m_data_blocks;
+	AlignedVector::AlignedVector<uint32_t> m_bytes_offsets;
+	AlignedVector::AlignedVector<uint8_t> m_data_blocks;
 };

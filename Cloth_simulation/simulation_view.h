@@ -55,19 +55,19 @@ public:
 
 	void newFrameStart(float aspect_ratio);
 
-	void render_cloth(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices, const AlignedVector<glm::vec3>& normals, bool mark_vertices) const
+	void render_cloth(const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::uvec3>& indices, const AlignedVector::AlignedVector<glm::vec3>& normals, bool mark_vertices) const
 	{
 		setUniforms(m_draw_parameters.m_cloth_color, m_draw_parameters.m_cloth_specular_intensity, true, mark_vertices);
 		renderInternal((int)normals.size(), (int)indices.size(), coords, indices, normals, m_draw_parameters.m_cloth_draw_mode, m_cloth_vbo, m_cloth_ebo);
 	}
 
-	void render_cloth(int triangles_count, const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::vec3>& normals) const
+	void render_cloth(int triangles_count, const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::vec3>& normals) const
 	{
 		setUniforms(m_draw_parameters.m_cloth_color, m_draw_parameters.m_cloth_specular_intensity, true, false);
 		renderInternal((int)normals.size(), triangles_count, coords, normals, m_draw_parameters.m_cloth_draw_mode, m_cloth_vbo, m_cloth_ebo);
 	}
 
-	void render_collider(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices, const AlignedVector<glm::vec3>& normals) const
+	void render_collider(const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::uvec3>& indices, const AlignedVector::AlignedVector<glm::vec3>& normals) const
 	{
 		setUniforms(m_draw_parameters.m_collider_color, m_draw_parameters.m_collider_specular_intensity, true, false);
 		renderInternal((int)coords.size(), (int)indices.size(), coords, indices, normals, m_draw_parameters.m_collider_draw_mode, m_collider_vbo, m_collider_ebo);
@@ -79,7 +79,7 @@ public:
 		renderInternal(vertices_count, triangles_count, m_draw_parameters.m_collider_draw_mode, m_collider_vbo, m_collider_ebo);
 	}
 
-	void render_candidate_object(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices) const
+	void render_candidate_object(const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::uvec3>& indices) const
 	{
 		setUniforms(m_draw_parameters.m_candidate_color, m_draw_parameters.m_candidate_specular_intensity, false, false);
 		renderInternal((int)coords.size(), (int)indices.size(), coords, indices, m_draw_parameters.m_candidate_draw_mode, m_candidate_vbo, m_candidate_ebo);
@@ -88,12 +88,12 @@ public:
 private:
 	void setUniforms(const glm::vec3& color, float specular_intensity, bool use_normals, bool mark_vertices) const;
 
-	void renderInternal(int vertices_count, int triangles_count, const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices,
-		const AlignedVector<glm::vec3>& normals, DrawMode draw_mode, int vbo, int ebo) const;
+	void renderInternal(int vertices_count, int triangles_count, const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::uvec3>& indices,
+		const AlignedVector::AlignedVector<glm::vec3>& normals, DrawMode draw_mode, int vbo, int ebo) const;
 
-	void renderInternal(int vertices_count, int triangles_count, const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::vec3>& normals, DrawMode draw_mode, int vbo, int ebo) const;
+	void renderInternal(int vertices_count, int triangles_count, const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::vec3>& normals, DrawMode draw_mode, int vbo, int ebo) const;
 
-	void renderInternal(int vertices_count, int triangles_count, const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices, DrawMode draw_mode, int vbo, int ebo) const;
+	void renderInternal(int vertices_count, int triangles_count, const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::uvec3>& indices, DrawMode draw_mode, int vbo, int ebo) const;
 
 	void renderInternal(int vertices_count, int triangles_count, DrawMode draw_mode, int vbo, int ebo) const;
 

@@ -20,7 +20,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// STRETCH: 2 - we control distance between them
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::STRETCH];
 
 		// here we can deal with phantom vertices
@@ -93,7 +93,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// REALISTIC_STRETCH: 3 - triangle controlled by the constraint
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::REALISTIC_STRETCH];
 
 		// here we can deal with phantom vertices
@@ -221,7 +221,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// BEND: 4 - two triangles with common edge
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::BEND];
 
 		// here we can deal with phantom vertices
@@ -342,7 +342,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// REALISTIC_BEND: 4 - two triangles with common edge
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::REALISTIC_BEND];
 
 		// here we can deal with phantom vertices
@@ -466,7 +466,7 @@ namespace EvaluateConstraintsMultithread
 		const PhantomVertices* constraint = (PhantomVertices*)buffers.getDataBlock(constraint_id);
 
 		// PHANTOM_VERTICES: 25 - this is maximum vertices per phantom
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int max_vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::PHANTOM_VERTICES];
 		const int real_vertices_count = (int)roundf(constraint->m_vertices_count);
 
@@ -505,7 +505,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// SEW_VERTICES: 2 - we sew them
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::SEW_VERTICES];
 
 		// here we can deal with phantom vertices
@@ -592,7 +592,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// FIXED_POSITION: 1 - one vertex
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		glm::vec3 vertex_test_coords = cloth.getTestCoords(host_vertices[constraint->m_uint_data[0]]);
 
 		// FIXED_POSITION: 3 - position of a vertex
@@ -610,7 +610,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// FIXED_ANGLE: 4 - two triangles with common edge
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::FIXED_ANGLE];
 
 		// all vertices here are real
@@ -792,7 +792,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// SELF_VERTEX_TRIANGLE_COLLISION: 1 - vertex, 3 - triangle
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION];
 
 		// all vertices here are real
@@ -910,7 +910,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// SELF_VERTEX_TRIANGLE_COLLISION_BETWEEN_LAYERS: 1 - vertex, 3 - triangle
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_BETWEEN_LAYERS];
 
 		// all vertices here are real
@@ -1028,7 +1028,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// : 2 - edge a, 2 - edge b
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::SELF_EDGE_EDGE_COLLISION];
 
 		// all vertices here are real
@@ -1126,7 +1126,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// COLLIDER_VERTEX_TRIANGLE_COLLISION: 1 - one vertex of the cloth
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION];
 
 		// all vertices here are real
@@ -1188,7 +1188,7 @@ namespace EvaluateConstraintsMultithread
 
 		// get constraint data
 		// COLLIDER_EDGE_EDGE_COLLISION: 2 - one edge
-		const AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
+		const AlignedVector::AlignedVector<uint32_t>& host_vertices = cloth.getHostOrOriginalVertices();
 		constexpr int vertices_count = CONSTRAINT_UINT_COUNT[(size_t)ConstraintType::COLLIDER_EDGE_EDGE_COLLISION];
 
 		// all vertices here are real
