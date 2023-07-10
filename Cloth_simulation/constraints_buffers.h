@@ -2,6 +2,7 @@
 #include <array>
 #include <vector>
 #include "keys_utils.h"
+#include "defines.h"
 #include "aligned_vector.h"
 
 class ConstraintsBuffers
@@ -140,14 +141,79 @@ public:
 		}
 
 		m_data_blocks.insert(m_data_blocks.end(), buffers_to_push.m_data_blocks.begin(), buffers_to_push.m_data_blocks.end());
-		for (int i = old_constraints_count; i < m_constraints_count; ++i)
+
+		if (value_to_add_to_vertices)
 		{
-			const int vertices_count = CONSTRAINT_UINT_COUNT[m_constraints_types[i]];
-			uint32_t* vertex = (uint32_t*)(m_data_blocks.data() + m_bytes_offsets[i]);
-			for (int j = 0; j < vertices_count; ++j)
+			for (int i = old_constraints_count; i < m_constraints_count; ++i)
 			{
-				*vertex += value_to_add_to_vertices;
-				++vertex;
+				const int vertices_count = CONSTRAINT_UINT_COUNT[m_constraints_types[i]];
+				uint32_t* vertex = (uint32_t*)(m_data_blocks.data() + m_bytes_offsets[i]);
+				for (int j = 0; j < vertices_count; ++j)
+				{
+					*vertex += value_to_add_to_vertices;
+					++vertex;
+				}
+			}
+		}
+	}
+
+	void pushBuffers(const std::array<ConstraintsBuffers, THREADS_COUNT>& buffers_to_push, int value_to_add_to_vertices)
+	{
+		const int old_constraints_count = m_constraints_count;
+		uint32_t old_offset = m_occupied_bytes_count;
+
+		for (const auto& buffer : buffers_to_push)
+		{
+			m_constraints_count += buffer.m_constraints_count;
+			for (int i = 0; i < CONSTRAINT_TYPES_COUNT; ++i)
+			{
+				m_stored_constraints_per_type[i] += buffer.m_stored_constraints_per_type[i];
+			}
+			m_occupied_bytes_count += buffer.m_occupied_bytes_count;
+		}
+
+		size_t total_bytes_count = 0u;
+		for (int i = 0; i < CONSTRAINT_TYPES_COUNT; ++i)
+		{
+			total_bytes_count += m_stored_constraints_per_type[i] * CONSTRAINT_BYTES_COUNT[i];
+		}
+
+		m_constraints_types.reserve(m_constraints_count);
+		m_is_disabled.reserve(m_constraints_count);
+		m_bytes_offsets.reserve(m_constraints_count);
+		m_data_blocks.reserve(total_bytes_count);
+
+		for (const auto& buffer : buffers_to_push)
+		{
+			m_constraints_types.insert(
+				m_constraints_types.end(), buffer.m_constraints_types.begin(), buffer.m_constraints_types.end());
+			m_is_disabled.insert(m_is_disabled.begin(), buffer.m_is_disabled.begin(), buffer.m_is_disabled.end());
+			m_bytes_offsets.insert(m_bytes_offsets.end(), buffer.m_bytes_offsets.begin(), buffer.m_bytes_offsets.end());
+			m_data_blocks.insert(m_data_blocks.end(), buffer.m_data_blocks.begin(), buffer.m_data_blocks.end());
+		}
+
+		int iter = old_constraints_count;
+		for (const auto& buffer : buffers_to_push)
+		{
+			for (int i = 0; i < buffer.m_constraints_count; ++i)
+			{
+				m_bytes_offsets[iter] += old_offset;
+				++iter;
+			}
+			old_offset += buffer.m_occupied_bytes_count;
+		}
+
+		if (value_to_add_to_vertices)
+		{
+			for (int i = old_constraints_count; i < m_constraints_count; ++i)
+			{
+				const int vertices_count = CONSTRAINT_UINT_COUNT[m_constraints_types[i]];
+				uint32_t* vertex = (uint32_t*)(m_data_blocks.data() + m_bytes_offsets[i]);
+				for (int j = 0; j < vertices_count; ++j)
+				{
+					*vertex += value_to_add_to_vertices;
+					++vertex;
+				}
 			}
 		}
 	}

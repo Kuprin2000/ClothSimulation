@@ -3,7 +3,6 @@
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 
 #include "constraints_graph.h"
-#include "defines.h"
 #include "bool_vector.h"
 #include <cmath>
 #include <algorithm>
@@ -357,7 +356,7 @@ void ConstraintsGraph::assignColors(const std::vector<int>& conflicts, int max_d
 #pragma omp barrier
 }
 
-void ConstraintsGraph::detectConflicts(const std::vector<int>& conflicts, AlignedVector::AlignedVector<MathUtils::FastSet>& new_conflicts, int thread_id) const
+void ConstraintsGraph::detectConflicts(const std::vector<int>& conflicts, std::array<MathUtils::FastSet, THREADS_COUNT>& new_conflicts, int thread_id) const
 {
 	for (int i = thread_id; i < conflicts.size(); i += THREADS_COUNT)
 	{
@@ -385,7 +384,7 @@ void ConstraintsGraph::colorGraph()
 		max_degree = std::max(max_degree, m_nodes.getNeighborsCount(i));
 	}
 
-	AlignedVector::AlignedVector<MathUtils::FastSet> new_conflicts(THREADS_COUNT);
+	std::array<MathUtils::FastSet, THREADS_COUNT> new_conflicts;
 	for (int i = 0; i < THREADS_COUNT; ++i)
 	{
 		new_conflicts[i] = MathUtils::FastSet(m_nodes.getNodesCount());
