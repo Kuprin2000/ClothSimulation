@@ -9,7 +9,7 @@
 #include "primitives_ownership_utils.h"
 #include "copy_utils.h"
 
-Cloth::Cloth(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices, const AlignedVector<float>& opposite_masses,
+Cloth::Cloth(const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::uvec3>& indices, const AlignedVector::AlignedVector<float>& opposite_masses,
 	const MaterialProperties& material_props, int layer_number, bool use_realistic_stretch, bool use_realistic_bending)
 {
 	m_vertices_data.m_coords = coords;

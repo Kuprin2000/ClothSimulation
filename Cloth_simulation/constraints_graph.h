@@ -1,16 +1,15 @@
 #pragma once
 #include "settings_structures.h"
 #include "cloth.h"
+#include "bool_vector.h"
 
-static const int8_t NO_COLOR = INT8_MIN;
+static const int16_t NO_COLOR = INT16_MIN;
 
 class ConstraintGraphNodes
 {
 public:
 	void generateNodes(ConstraintsBuffers& constraints)
 	{
-		clear();
-
 		for (int i = 0; i < constraints.getConstraintsCount(); ++i)
 		{
 			if (!constraints.getIsDisabled(i))
@@ -20,10 +19,16 @@ public:
 		}
 
 		m_constraints_buffer = &constraints;
-		m_constraints_neighbors.resize(m_enabled_constraints.size(), {});
+
+		m_constraints_neighbors.resize(m_enabled_constraints.size());
+		for (int i = 0; i < m_constraints_neighbors.size(); ++i)
+		{
+			m_constraints_neighbors[i].updateMaxValue((int)m_enabled_constraints.size());
+		}
+
 		m_constraints_color.resize(m_enabled_constraints.size(), NO_COLOR);
 		m_constraints_counter.resize(m_enabled_constraints.size(), 0);
-		m_constraints_is_ordered.resize(m_enabled_constraints.size(), false);
+		m_constraints_is_ordered.resize(m_enabled_constraints.size());
 	}
 
 	_NODISCARD int getNodesCount() const
@@ -52,7 +57,7 @@ public:
 		return result;
 	}
 
-	_NODISCARD int8_t getColor(int index) const
+	_NODISCARD int16_t getColor(int index) const
 	{
 		return m_constraints_color[index];
 	}
@@ -67,7 +72,7 @@ public:
 		return m_constraints_is_ordered[index];
 	}
 
-	void setColor(int8_t new_color, int index)
+	void setColor(int16_t new_color, int index)
 	{
 		m_constraints_color[index] = new_color;
 	}
@@ -79,7 +84,7 @@ public:
 
 	void setIsOrdered(bool new_value, int index)
 	{
-		m_constraints_is_ordered[index] = new_value;
+		m_constraints_is_ordered.setValue(new_value, index);
 	}
 
 	void decreaseCounter(int index)
@@ -89,7 +94,7 @@ public:
 
 	void addNeighbors(const std::vector<int>& new_neighbors, int index)
 	{
-		m_constraints_neighbors[index].insert(new_neighbors.begin(), new_neighbors.end());
+		m_constraints_neighbors[index].insert(new_neighbors);
 	}
 
 	void deleteNeighbour(int neighbour_to_delete, int index)
@@ -112,16 +117,24 @@ public:
 		return m_constraints_buffer->getConstraintVertices(m_enabled_constraints[index]);
 	}
 
-	_NODISCARD const std::set<int>& getNeighbors(int index) const
+	_NODISCARD const MathUtils::FastSet& getNeighbors(int index) const
 	{
 		return m_constraints_neighbors[index];
+	}
+
+	_NODISCARD int getNeighborsCount(int index) const
+	{
+		return (int)m_constraints_neighbors[index].size();
 	}
 
 	void clear()
 	{
 		m_enabled_constraints.clear();
 		m_constraints_buffer = nullptr;
-		m_constraints_neighbors.clear();
+		for (int i = 0; i < m_constraints_neighbors.size(); ++i)
+		{
+			m_constraints_neighbors[i].clear();
+		}
 		m_constraints_color.clear();
 		m_constraints_counter.clear();
 		m_constraints_is_ordered.clear();
@@ -130,10 +143,10 @@ public:
 private:
 	std::vector<int> m_enabled_constraints;
 	ConstraintsBuffers* m_constraints_buffer = nullptr;
-	std::vector<std::set<int>> m_constraints_neighbors;
-	std::vector<int8_t> m_constraints_color;
+	std::vector<MathUtils::FastSet> m_constraints_neighbors;
+	std::vector<int16_t> m_constraints_color;
 	std::vector<int> m_constraints_counter;
-	std::vector<bool> m_constraints_is_ordered;
+	BoolVector::BoolVector m_constraints_is_ordered;
 };
 
 class TasksMap
@@ -239,18 +252,22 @@ private:
 
 	void createEdges();
 
-	_NODISCARD std::vector<std::set<int>> bronKerboschDegeneracy();
+	_NODISCARD std::vector<MathUtils::FastSet> bronKerboschDegeneracy();
 
-	void bronKerboschPivot(const std::set<int>& clique, std::set<int> candidates,
-		std::set<int> duplicates, std::vector<std::set<int>>& results) const;
+	void bronKerboschPivot(const MathUtils::FastSet& clique, MathUtils::FastSet candidates,
+		MathUtils::FastSet duplicates, std::vector<MathUtils::FastSet>& results) const;
 
 	_NODISCARD std::vector<int> sortDegeneracy();
 
-	_NODISCARD int findCommonVertex(const std::set<int>& clique) const;
+	_NODISCARD int findCommonVertex(const MathUtils::FastSet& clique) const;
 
-	void replaceVertices(const std::vector<std::set<int>>& cliques);
+	void replaceVertices(const std::vector<MathUtils::FastSet>& cliques);
 
 	void generatePhantomConstraintsBuffers();
+
+	void assignColors(const std::vector<int>& conflicts, int max_degree, int thread_id);
+
+	void detectConflicts(const std::vector<int>& conflicts, AlignedVector::AlignedVector<MathUtils::FastSet>& tmp_conflicts, int thread_id) const;
 
 	void colorGraph();
 

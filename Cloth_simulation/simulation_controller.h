@@ -177,11 +177,11 @@ private:
 
 	_NODISCARD bool loadColliderCandidate();
 
-	void transformCoords(const glm::vec3& rotations, const glm::vec3& size, const glm::vec3& translation, AlignedVector<glm::vec3>& coords) const;
+	void transformCoords(const glm::vec3& rotations, const glm::vec3& size, const glm::vec3& translation, AlignedVector::AlignedVector<glm::vec3>& coords) const;
 
-	_NODISCARD float getAverageEdgeLength(const AlignedVector<glm::vec3>& coords, const AlignedVector<glm::uvec3>& indices) const;
+	_NODISCARD float getAverageEdgeLength(const AlignedVector::AlignedVector<glm::vec3>& coords, const AlignedVector::AlignedVector<glm::uvec3>& indices) const;
 
-	_NODISCARD bool readGeometryFromFile(AlignedVector<glm::vec3>& coords, AlignedVector<glm::uvec3>& indices, const std::string& file_path) const;
+	_NODISCARD bool readGeometryFromFile(AlignedVector::AlignedVector<glm::vec3>& coords, AlignedVector::AlignedVector<glm::uvec3>& indices, const std::string& file_path) const;
 
 	std::vector<std::vector<KeysUtils::ConstraintKey>> addFixedVertex(const std::vector<FixedVertexTask>& tasks);
 
@@ -336,8 +336,8 @@ private:
 
 	struct
 	{
-		AlignedVector<glm::vec3> m_coords;
-		AlignedVector<glm::uvec3> m_indices;
+		AlignedVector::AlignedVector<glm::vec3> m_coords;
+		AlignedVector::AlignedVector<glm::uvec3> m_indices;
 		float m_average_edge_length = 0.0f;
 	}
 	m_candidate_object;
