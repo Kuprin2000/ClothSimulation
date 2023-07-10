@@ -274,52 +274,42 @@ float SimulationModel::evaluateExternalForces(float time_delta)
 
 void SimulationModel::findCollisionsCandidates()
 {
-	m_collisions_constraints.clear();
-	//for (auto& elem : m_collisions_candidates)
-	//{
-	//	elem.clear();
-	//}
-
-	// std::array<int, 2> self_collision_key = { 0, 0 };
-	// std::set<std::array<int, 2>> done_self_collisions;
-
 	const RTree::RTreeNodes& r_tree_nodes = m_r_tree.getNodes();
 	const std::vector<int>& cloth_triangle_nodes = m_r_tree.getClothPrimitivesNodes();
 
+	std::array<ConstraintsBuffers, THREADS_COUNT> tmp_buffers;
+
 	// we will test all cloth triangles
-	for (auto cloth_triangle_node : cloth_triangle_nodes)
+#pragma omp parallel
 	{
-		const int current_triangle_id = r_tree_nodes.getPrimitiveID(cloth_triangle_node);
-		const std::vector<int> collided_triangles = m_r_tree.findCollisionsWithBndBox(r_tree_nodes.getBndBox(cloth_triangle_node));
+		const int thread_id = omp_get_thread_num();
 
-		for (const auto collided_triangle_node : collided_triangles)
+		for (int i = thread_id; i < cloth_triangle_nodes.size(); i += THREADS_COUNT)
 		{
-			const int collided_triangle_id = r_tree_nodes.getPrimitiveID(collided_triangle_node);
-			if (collided_triangle_id == current_triangle_id)
-			{
-				continue;
-			}
+			const int current_triangle_id = r_tree_nodes.getPrimitiveID(cloth_triangle_nodes[i]);
+			const std::vector<int> collided_triangles = m_r_tree.findCollisionsWithBndBox(r_tree_nodes.getBndBox(cloth_triangle_nodes[i]));
 
-			if (r_tree_nodes.getObjectType(collided_triangle_node) == RTree::ObjectType::CLOTH)
+			for (const auto collided_triangle_node : collided_triangles)
 			{
-				// self_collision_key = { std::min<int>(cloth_triangle_node, collided_triangle_node), std::max<int>(cloth_triangle_node, collided_triangle_node) };
-				// if (done_self_collisions.contains(self_collision_key))
-				// {
-					// continue;
-				// }
+				const int collided_triangle_id = r_tree_nodes.getPrimitiveID(collided_triangle_node);
 
-				// done_self_collisions.insert(self_collision_key);
-				createSelfCollisionCandidates(current_triangle_id, collided_triangle_id);
-			}
-			else
-			{
-				createColliderCollisionCandidate(current_triangle_id, collided_triangle_id);
+				if (r_tree_nodes.getObjectType(collided_triangle_node) == RTree::ObjectType::CLOTH && (current_triangle_id < collided_triangle_id))
+				{
+					createSelfCollisionCandidates(current_triangle_id, collided_triangle_id, tmp_buffers[thread_id]);
+				}
+				if (r_tree_nodes.getObjectType(collided_triangle_node) == RTree::ObjectType::COLLIDER)
+				{
+					createColliderCollisionCandidate(current_triangle_id, collided_triangle_id, tmp_buffers[thread_id]);
+				}
 			}
 		}
 	}
+
+	m_collisions_constraints.clear();
+	m_collisions_constraints.pushBuffers(tmp_buffers, 0);
 }
 
-void SimulationModel::createSelfCollisionCandidates(int triangle_a, int triangle_b)
+void SimulationModel::createSelfCollisionCandidates(int triangle_a, int triangle_b, ConstraintsBuffers& buffer)
 {
 	// get data about triangles
 	glm::uvec3 triangle_a_indices = m_cloth.getIndices(triangle_a);
@@ -350,15 +340,13 @@ void SimulationModel::createSelfCollisionCandidates(int triangle_a, int triangle
 		// SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE: 1 - vertex, 1 - triangle, 2 - zeros
 		if (PrimitivesOwnershipUtils::triangleOwnsTheVertex(vertex_id, triangle_a_primitives_ownership))
 		{
-			// m_collisions_candidates[(size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE].push_back(m_collisions_constraints.getConstraintsCount());
-			m_collisions_constraints.pushConstraint(ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE,
+			buffer.pushConstraint(ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE,
 				{ (uint32_t)triangle_a_indices[vertex_id], (uint32_t)triangle_b, 0u, 0u }, std::vector<float>(data_array_size, 0.0f), true);
 		}
 
 		if (PrimitivesOwnershipUtils::triangleOwnsTheVertex(vertex_id, triangle_b_primitives_ownership))
 		{
-			// m_collisions_candidates[(size_t)ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE].push_back(m_collisions_constraints.getConstraintsCount());
-			m_collisions_constraints.pushConstraint(ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE,
+			buffer.pushConstraint(ConstraintType::SELF_VERTEX_TRIANGLE_COLLISION_CANDIDATE,
 				{ (uint32_t)triangle_b_indices[vertex_id],(uint32_t)triangle_a, 0u, 0u }, std::vector<float>(data_array_size, 0.0f), true);
 		}
 	}
@@ -372,8 +360,7 @@ void SimulationModel::createSelfCollisionCandidates(int triangle_a, int triangle
 			if (PrimitivesOwnershipUtils::triangleOwnsTheEdge(triangle_a_edge_index, triangle_a_primitives_ownership) &&
 				PrimitivesOwnershipUtils::triangleOwnsTheEdge(triangle_b_edge_index, triangle_b_primitives_ownership))
 			{
-				// m_collisions_candidates[(size_t)ConstraintType::SELF_EDGE_EDGE_COLLISION_CANDIDATE].push_back(m_collisions_constraints.getConstraintsCount());
-				m_collisions_constraints.pushConstraint(
+				buffer.pushConstraint(
 					ConstraintType::SELF_EDGE_EDGE_COLLISION_CANDIDATE,
 					{ (uint32_t)triangle_a, (uint32_t)triangle_a_edge_index, (uint32_t)triangle_b, (uint32_t)triangle_b_edge_index },
 					std::vector<float>(data_array_size_2, 0.0f), true);
@@ -382,7 +369,7 @@ void SimulationModel::createSelfCollisionCandidates(int triangle_a, int triangle
 	}
 }
 
-void SimulationModel::createColliderCollisionCandidate(int cloth_triangle_id, int collider_triangle_id)
+void SimulationModel::createColliderCollisionCandidate(int cloth_triangle_id, int collider_triangle_id, ConstraintsBuffers& buffer)
 {
 	glm::uvec3 cloth_triangle_indices = m_cloth.getIndices(cloth_triangle_id);
 	for (int i = 0; i < 3; ++i)
@@ -403,8 +390,7 @@ void SimulationModel::createColliderCollisionCandidate(int cloth_triangle_id, in
 	{
 		if (PrimitivesOwnershipUtils::triangleOwnsTheVertex(vertex_id, cloth_triangle_primitives_ownership))
 		{
-			// m_collisions_candidates[(size_t)ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION_CANDIDATE].push_back(m_collisions_constraints.getConstraintsCount());
-			m_collisions_constraints.pushConstraint(ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION_CANDIDATE,
+			buffer.pushConstraint(ConstraintType::COLLIDER_VERTEX_TRIANGLE_COLLISION_CANDIDATE,
 				{ cloth_triangle_indices[0], (uint32_t)collider_triangle_id }, std::vector<float>(data_array_size, 0.0f), true);
 		}
 	}
@@ -418,8 +404,7 @@ void SimulationModel::createColliderCollisionCandidate(int cloth_triangle_id, in
 			if (PrimitivesOwnershipUtils::triangleOwnsTheEdge(cloth_triangle_edge, cloth_triangle_primitives_ownership) &&
 				PrimitivesOwnershipUtils::triangleOwnsTheEdge(object_triangle_edge, collider_triangle_primitives_ownership))
 			{
-				// m_collisions_candidates[(size_t)ConstraintType::COLLIDER_EDGE_EDGE_COLLISION_CANDIDATE].push_back(m_collisions_constraints.getConstraintsCount());
-				m_collisions_constraints.pushConstraint(ConstraintType::COLLIDER_EDGE_EDGE_COLLISION_CANDIDATE,
+				buffer.pushConstraint(ConstraintType::COLLIDER_EDGE_EDGE_COLLISION_CANDIDATE,
 					{ (uint32_t)cloth_triangle_id, (uint32_t)cloth_triangle_edge, (uint32_t)collider_triangle_id, (uint32_t)object_triangle_edge }, std::vector<float>(data_array_size_2, 0.0f), true);
 			}
 		}

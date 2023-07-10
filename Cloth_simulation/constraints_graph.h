@@ -1,6 +1,7 @@
 #pragma once
 #include "settings_structures.h"
 #include "cloth.h"
+#include "defines.h"
 #include "bool_vector.h"
 
 static const int16_t NO_COLOR = INT16_MIN;
@@ -267,7 +268,7 @@ private:
 
 	void assignColors(const std::vector<int>& conflicts, int max_degree, int thread_id);
 
-	void detectConflicts(const std::vector<int>& conflicts, AlignedVector::AlignedVector<MathUtils::FastSet>& tmp_conflicts, int thread_id) const;
+	void detectConflicts(const std::vector<int>& conflicts, std::array<MathUtils::FastSet, THREADS_COUNT>& tmp_conflicts, int thread_id) const;
 
 	void colorGraph();
 

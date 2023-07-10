@@ -153,9 +153,9 @@ private:
 
 	void findCollisionsCandidates();
 
-	void createSelfCollisionCandidates(int triangle_a, int triangle_b);
+	void createSelfCollisionCandidates(int triangle_a, int triangle_b, ConstraintsBuffers &buffer);
 
-	void createColliderCollisionCandidate(int cloth_triangle_id, int collider_triangle_id);
+	void createColliderCollisionCandidate(int cloth_triangle_id, int collider_triangle_id, ConstraintsBuffers& buffer);
 
 	void checkCollisionsCandidates(float max_movement);
 
