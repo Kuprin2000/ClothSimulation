@@ -125,7 +125,11 @@ public:
 	void prepareForSimulation()
 	{
 		m_cloth_constraints_graph.setConstraints(m_cloth.getInternalConstraints(), m_cloth.getRealVerticesCount());
-		m_cloth.setPhantomVertices(m_cloth_constraints_graph.getReplacedVertices(), m_cloth_constraints_graph.getPhantomVerticesCount());
+
+#pragma omp single
+		{
+			m_cloth.setPhantomVertices(m_cloth_constraints_graph.getReplacedVertices(), m_cloth_constraints_graph.getPhantomVerticesCount());
+		}
 	}
 
 	_NODISCARD const ExecutionStatistic& simulationStep(float time_delta);
@@ -153,7 +157,7 @@ private:
 
 	void findCollisionsCandidates();
 
-	void createSelfCollisionCandidates(int triangle_a, int triangle_b, ConstraintsBuffers &buffer);
+	void createSelfCollisionCandidates(int triangle_a, int triangle_b, ConstraintsBuffers& buffer);
 
 	void createColliderCollisionCandidate(int cloth_triangle_id, int collider_triangle_id, ConstraintsBuffers& buffer);
 
@@ -194,6 +198,8 @@ private:
 	ExecutionStatistic m_statistic;
 
 	float m_max_movement = 0.0f;
+
+	std::array<ConstraintsBuffers, THREADS_COUNT> m_tmp_collisions_buffers;
 
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
 	std::chrono::steady_clock::time_point m_start_time = std::chrono::high_resolution_clock::now();

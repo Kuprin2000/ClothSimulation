@@ -150,99 +150,117 @@ std::vector<std::vector<KeysUtils::ConstraintKey>> SimulationModel::addSewing(co
 
 const ExecutionStatistic& SimulationModel::simulationStep(float time_delta)
 {
-
+#pragma omp single
+	{
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_start_time = std::chrono::high_resolution_clock::now();
+		m_start_time = std::chrono::high_resolution_clock::now();
 #endif
 
-	m_max_movement = evaluateExternalForces(time_delta);
+		m_max_movement = evaluateExternalForces(time_delta);
 
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_evaluate_forces_time =
-		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
-	m_start_time = m_end_time;
+		m_end_time = std::chrono::high_resolution_clock::now();
+		m_statistic.m_evaluate_forces_time =
+			(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+		m_start_time = m_end_time;
 #endif
 
-	generateRTree(m_max_movement);
+		generateRTree(m_max_movement);
 
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_rtree_creation_time =
-		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
-	m_start_time = m_end_time;
+		m_end_time = std::chrono::high_resolution_clock::now();
+		m_statistic.m_rtree_creation_time =
+			(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+		m_start_time = m_end_time;
 #endif
+	}
 
 	findCollisionsCandidates();
 
+#pragma omp single
+	{
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_find_collisions_candidates_time =
-		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
-	m_start_time = m_end_time;
+		m_end_time = std::chrono::high_resolution_clock::now();
+		m_statistic.m_find_collisions_candidates_time =
+			(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+		m_start_time = m_end_time;
 #endif
+	}
 
 	checkCollisionsCandidates(m_max_movement);
 
+#pragma omp single
+	{
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_check_collisions_candidates_time =
-		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
-	m_start_time = m_end_time;
+		m_end_time = std::chrono::high_resolution_clock::now();
+		m_statistic.m_check_collisions_candidates_time =
+			(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+		m_start_time = m_end_time;
 #endif
+	}
 
 	m_collisions_constraints_graph.setConstraints(m_collisions_constraints, m_cloth.getRealVerticesCount());
 
+#pragma omp single
+	{
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_collisions_constraints_graph_time =
-		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
-	m_start_time = m_end_time;
+		m_end_time = std::chrono::high_resolution_clock::now();
+		m_statistic.m_collisions_constraints_graph_time =
+			(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+		m_start_time = m_end_time;
 #endif
+	}
 
 	if (m_user_defined_constraints_changed)
 	{
 		m_user_defined_constraints_graph.setConstraints(m_user_defined_constraints, m_cloth.getRealVerticesCount());
-		m_user_defined_constraints_changed = false;
 	}
 
+#pragma omp single
+	{
+		m_user_defined_constraints_changed = false;
+
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_user_constraints_graph_time =
-		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
-	m_start_time = m_end_time;
+		m_end_time = std::chrono::high_resolution_clock::now();
+		m_statistic.m_user_constraints_graph_time =
+			(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+		m_start_time = m_end_time;
 #endif
+	}
 
 	evaluateConstraints(time_delta);
 
+#pragma omp single
+	{
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_evaluate_constraints_time =
-		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
-	m_start_time = m_end_time;
+		m_end_time = std::chrono::high_resolution_clock::now();
+		m_statistic.m_evaluate_constraints_time =
+			(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+		m_start_time = m_end_time;
 #endif
 
-	updatePositionsAndSpeeds(time_delta);
+		updatePositionsAndSpeeds(time_delta);
 
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_update_positions_and_speeds_time =
-		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
-	m_start_time = m_end_time;
+		m_end_time = std::chrono::high_resolution_clock::now();
+		m_statistic.m_update_positions_and_speeds_time =
+			(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+		m_start_time = m_end_time;
 #endif
 
-	m_cloth.updateNormals();
+		m_cloth.updateNormals();
 
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
-	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_update_normals_time =
-		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
+		m_end_time = std::chrono::high_resolution_clock::now();
+		m_statistic.m_update_normals_time =
+			(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
 #endif
 
-	m_statistic.m_internal_constraints_count = (uint32_t)m_cloth.getInternalConstraintsCount();
-	m_statistic.m_phantom_constraints_count = (uint32_t)m_cloth_constraints_graph.getPhantomConstraintsCount();
-	m_statistic.m_collision_constraints_count = (uint32_t)m_collisions_constraints_graph.getNodesCount();
-	m_statistic.m_user_defined_constraints_count = (uint32_t)m_user_defined_constraints.getConstraintsCount();
+		m_statistic.m_internal_constraints_count = (uint32_t)m_cloth.getInternalConstraintsCount();
+		m_statistic.m_phantom_constraints_count = (uint32_t)m_cloth_constraints_graph.getPhantomConstraintsCount();
+		m_statistic.m_collision_constraints_count = (uint32_t)m_collisions_constraints_graph.getNodesCount();
+		m_statistic.m_user_defined_constraints_count = (uint32_t)m_user_defined_constraints.getConstraintsCount();
+	}
 
 	return m_statistic;
 }
@@ -277,36 +295,40 @@ void SimulationModel::findCollisionsCandidates()
 	const RTree::RTreeNodes& r_tree_nodes = m_r_tree.getNodes();
 	const std::vector<int>& cloth_triangle_nodes = m_r_tree.getClothPrimitivesNodes();
 
-	std::array<ConstraintsBuffers, THREADS_COUNT> tmp_buffers;
-
 	// we will test all cloth triangles
-#pragma omp parallel
+	const int thread_id = omp_get_thread_num();
+
+	for (int i = thread_id; i < cloth_triangle_nodes.size(); i += THREADS_COUNT)
 	{
-		const int thread_id = omp_get_thread_num();
+		const int current_triangle_id = r_tree_nodes.getPrimitiveID(cloth_triangle_nodes[i]);
+		const std::vector<int> collided_triangles = m_r_tree.findCollisionsWithBndBox(r_tree_nodes.getBndBox(cloth_triangle_nodes[i]));
 
-		for (int i = thread_id; i < cloth_triangle_nodes.size(); i += THREADS_COUNT)
+		for (const auto collided_triangle_node : collided_triangles)
 		{
-			const int current_triangle_id = r_tree_nodes.getPrimitiveID(cloth_triangle_nodes[i]);
-			const std::vector<int> collided_triangles = m_r_tree.findCollisionsWithBndBox(r_tree_nodes.getBndBox(cloth_triangle_nodes[i]));
+			const int collided_triangle_id = r_tree_nodes.getPrimitiveID(collided_triangle_node);
 
-			for (const auto collided_triangle_node : collided_triangles)
+			if (r_tree_nodes.getObjectType(collided_triangle_node) == RTree::ObjectType::CLOTH && (current_triangle_id < collided_triangle_id))
 			{
-				const int collided_triangle_id = r_tree_nodes.getPrimitiveID(collided_triangle_node);
-
-				if (r_tree_nodes.getObjectType(collided_triangle_node) == RTree::ObjectType::CLOTH && (current_triangle_id < collided_triangle_id))
-				{
-					createSelfCollisionCandidates(current_triangle_id, collided_triangle_id, tmp_buffers[thread_id]);
-				}
-				if (r_tree_nodes.getObjectType(collided_triangle_node) == RTree::ObjectType::COLLIDER)
-				{
-					createColliderCollisionCandidate(current_triangle_id, collided_triangle_id, tmp_buffers[thread_id]);
-				}
+				createSelfCollisionCandidates(current_triangle_id, collided_triangle_id, m_tmp_collisions_buffers[thread_id]);
+			}
+			if (r_tree_nodes.getObjectType(collided_triangle_node) == RTree::ObjectType::COLLIDER)
+			{
+				createColliderCollisionCandidate(current_triangle_id, collided_triangle_id, m_tmp_collisions_buffers[thread_id]);
 			}
 		}
 	}
+#pragma omp barrier
 
-	m_collisions_constraints.clear();
-	m_collisions_constraints.pushBuffers(tmp_buffers, 0);
+#pragma omp single
+	{
+		m_collisions_constraints.clear();
+		m_collisions_constraints.pushBuffers(m_tmp_collisions_buffers, 0);
+
+		for (auto& elem : m_tmp_collisions_buffers)
+		{
+			elem.clear();
+		}
+	}
 }
 
 void SimulationModel::createSelfCollisionCandidates(int triangle_a, int triangle_b, ConstraintsBuffers& buffer)
@@ -413,6 +435,8 @@ void SimulationModel::createColliderCollisionCandidate(int cloth_triangle_id, in
 
 void SimulationModel::checkCollisionsCandidates(float max_movement)
 {
+	const int thread_id = omp_get_thread_num();
+
 	const float self_collision_critical_distance = std::min(max_movement, m_settings.m_max_collision_radius_for_cloth);
 	const float collider_collision_critical_distance = std::min(max_movement, m_settings.m_max_collision_radius_for_colliders);
 
@@ -420,8 +444,7 @@ void SimulationModel::checkCollisionsCandidates(float max_movement)
 	// candidates = &m_collisions_candidates[(size_t)ConstraintType::...];
 	// to get tasks of specific type and remove switch, but it is not good for CPU version
 
-#pragma omp parallel for
-	for (int i = 0; i < m_collisions_constraints.getConstraintsCount(); ++i)
+	for (int i = thread_id; i < m_collisions_constraints.getConstraintsCount(); i += THREADS_COUNT)
 	{
 		switch (m_collisions_constraints.getConstraintType(i))
 		{
@@ -443,8 +466,12 @@ void SimulationModel::checkCollisionsCandidates(float max_movement)
 			break;
 		}
 	}
+#pragma omp barrier
 
-	replaceCandidatesWithRealCollisions();
+#pragma omp single
+	{
+		replaceCandidatesWithRealCollisions();
+	}
 }
 
 void SimulationModel::replaceCandidatesWithRealCollisions()
@@ -468,35 +495,34 @@ void SimulationModel::replaceCandidatesWithRealCollisions()
 
 void SimulationModel::evaluateConstraints(float time_delta)
 {
-#pragma omp parallel
+	const float alpha_correction_coeff = 1.0f / (time_delta * time_delta);
+
+	for (int iteration = 0; iteration < m_settings.m_iterations_count; ++iteration)
 	{
-		const float alpha_correction_coeff = 1.0f / (time_delta * time_delta);
+		evaluateInternalConstraints(alpha_correction_coeff, iteration);
 
-		for (int iteration = 0; iteration < m_settings.m_iterations_count; ++iteration)
+#pragma omp single
 		{
-			evaluateInternalConstraints(alpha_correction_coeff, iteration);
-
-#pragma omp single
-			{
-				m_cloth.syncOriginalsVertices();
-			}
-
-			evaluateCollisionConstraints(alpha_correction_coeff, iteration);
-
-			evaluateUserConstraints(alpha_correction_coeff, iteration);
-
-#pragma omp single
-			{
-				m_cloth.syncPhantomVertices();
-			}
+			m_cloth.syncOriginalsVertices();
 		}
 
-		evaluateFriction(time_delta);
+		evaluateCollisionConstraints(alpha_correction_coeff, iteration);
+
+		evaluateUserConstraints(alpha_correction_coeff, iteration);
+
+#pragma omp single
+		{
+			m_cloth.syncPhantomVertices();
+		}
 	}
+
+	evaluateFriction(time_delta);
 }
 
 void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, int iteration)
 {
+	const int thread_id = omp_get_thread_num();
+
 	const std::vector<int>* tasks = nullptr;
 	const ConstraintsBuffers& buffer = m_cloth.getInternalConstraints();
 	const TasksMap& tasks_map = m_cloth_constraints_graph.getTasksMap();
@@ -504,8 +530,8 @@ void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, 
 	for (int partition = 0; partition < tasks_map.getPartitionsCount() - 1; ++partition)
 	{
 		tasks = &tasks_map.getTasks(partition);
-#pragma omp for
-		for (int i = 0; i < tasks->size(); ++i)
+
+		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
 		{
 			switch (buffer.getConstraintType((*tasks)[i]))
 			{
@@ -531,7 +557,9 @@ void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, 
 				throw std::exception("Wrong constraint type");
 			}
 		}
+#pragma omp barrier
 	}
+#pragma omp barrier
 
 #pragma omp single
 	{
@@ -545,6 +573,8 @@ void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, 
 
 void SimulationModel::evaluateCollisionConstraints(float alpha_correction_coeff, int iteration)
 {
+	const int thread_id = omp_get_thread_num();
+
 	const std::vector<int>* tasks = nullptr;
 	const ConstraintsBuffers& buffer = m_collisions_constraints;
 	const TasksMap& tasks_map = m_collisions_constraints_graph.getTasksMap();
@@ -552,8 +582,7 @@ void SimulationModel::evaluateCollisionConstraints(float alpha_correction_coeff,
 	for (int partition = 0; partition < tasks_map.getPartitionsCount() - 1; ++partition)
 	{
 		tasks = &tasks_map.getTasks(partition);
-#pragma omp for
-		for (int i = 0; i < tasks->size(); ++i)
+		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
 		{
 			switch (buffer.getConstraintType((*tasks)[i]))
 			{
@@ -577,11 +606,15 @@ void SimulationModel::evaluateCollisionConstraints(float alpha_correction_coeff,
 				break;
 			}
 		}
+#pragma omp barrier
 	}
+	#pragma omp barrier
 }
 
 void SimulationModel::evaluateUserConstraints(float alpha_correction_coeff, int iteration)
 {
+	const int thread_id = omp_get_thread_num();
+
 	const std::vector<int>* tasks = nullptr;
 	const ConstraintsBuffers& buffer = m_user_defined_constraints;
 	const TasksMap& tasks_map = m_user_defined_constraints_graph.getTasksMap();
@@ -589,8 +622,7 @@ void SimulationModel::evaluateUserConstraints(float alpha_correction_coeff, int 
 	for (int partition = 0; partition < tasks_map.getPartitionsCount() - 1; ++partition)
 	{
 		tasks = &tasks_map.getTasks(partition);
-#pragma omp for
-		for (int i = 0; i < tasks->size(); ++i)
+		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
 		{
 			switch (buffer.getConstraintType((*tasks)[i]))
 			{
@@ -608,11 +640,15 @@ void SimulationModel::evaluateUserConstraints(float alpha_correction_coeff, int 
 				break;
 			}
 		}
+#pragma omp barrier
 	}
+	#pragma omp barrier
 }
 
 void SimulationModel::evaluateFriction(float time_delta)
 {
+	const int thread_id = omp_get_thread_num();
+
 	const std::vector<int>* tasks = nullptr;
 	const ConstraintsBuffers& buffer = m_collisions_constraints;
 	const TasksMap& tasks_map = m_collisions_constraints_graph.getTasksMap();
@@ -620,8 +656,7 @@ void SimulationModel::evaluateFriction(float time_delta)
 	for (int partition = 0; partition < tasks_map.getPartitionsCount() - 1; ++partition)
 	{
 		tasks = &tasks_map.getTasks(partition);
-#pragma omp for
-		for (int i = 0; i < tasks->size(); ++i)
+		for (int i = thread_id; i < tasks->size(); i += THREADS_COUNT)
 		{
 			switch (buffer.getConstraintType((*tasks)[i]))
 			{
@@ -640,7 +675,9 @@ void SimulationModel::evaluateFriction(float time_delta)
 				break;
 			}
 		}
+#pragma omp barrier
 	}
+	#pragma omp barrier
 }
 
 void SimulationModel::updatePositionsAndSpeeds(float time_delta)

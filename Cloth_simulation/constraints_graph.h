@@ -290,4 +290,9 @@ private:
 	TasksMap m_tasks_map;
 
 	int m_colors_count = 1;
+
+	std::vector<int> m_conflicts;
+	std::array<MathUtils::FastSet, THREADS_COUNT> m_new_conflicts;
+	bool m_no_conflicts = false;
+	int m_max_degree = 0;
 };

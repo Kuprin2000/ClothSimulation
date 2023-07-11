@@ -83,31 +83,42 @@ int main()
 
 	// main loop
 	bool need_close = false;
+
+#pragma omp parallel
 	{
 		while (!need_close)
 		{
-
-			need_close = glfwWindowShouldClose(window);
-			processInput(window, controller);
+#pragma omp master
+			{
+				need_close = glfwWindowShouldClose(window);
+				processInput(window, controller);
+			}
 
 			controller.newFrame();
 
-			glfwSwapBuffers(window);
-			glfwPollEvents();
+#pragma omp master
+			{
+				glfwSwapBuffers(window);
+				glfwPollEvents();
 
 #ifdef PERFORMANCE_TEST
-			if (!frame_number)
-			{
-				begin = std::chrono::high_resolution_clock::now();
-			}
+				if (!frame_number)
+				{
+					begin = std::chrono::high_resolution_clock::now();
+				}
 
-			frame_number += (int)(controller.getState() == SimulationState::SIMULATION_RUN);
+				frame_number += (int)(controller.getState() == SimulationState::SIMULATION_RUN);
 
 #endif 
+			}
 
 #ifdef PERFORMANCE_TEST
 
-			need_close |= (frame_number == FRAMES_COUNT);
+#pragma omp master
+			{
+				need_close |= (frame_number == FRAMES_COUNT);
+			}
+#pragma omp barrier
 #endif 
 		}
 	}

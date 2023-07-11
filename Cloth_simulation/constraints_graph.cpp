@@ -9,51 +9,55 @@
 
 void ConstraintsGraph::setConstraints(ConstraintsBuffers& constraints, int vertices_count)
 {
-	clear();
-	m_nodes.generateNodes(constraints);
-	m_original_vertices_count = vertices_count;
+#pragma omp single
+	{
+		clear();
+		m_nodes.generateNodes(constraints);
+		m_original_vertices_count = vertices_count;
+
+		if (m_settings.m_need_create_partitions)
+		{
+			createEdges();
+
+			// simplify graph
+
+			if (m_settings.m_need_insert_phantoms)
+			{
+				const std::vector<MathUtils::FastSet> cliques = bronKerboschDegeneracy();
+				if (!cliques.empty() && (cliques[0].size() <= CONSTRAINT_UINT_COUNT[(int)ConstraintType::PHANTOM_VERTICES]))
+				{
+					replaceVertices(cliques);
+					generatePhantomConstraintsBuffers();
+
+					clearEdges();
+					createEdges();
+				}
+			}
+		}
+	}
 
 	if (m_settings.m_need_create_partitions)
 	{
-		createEdges();
-
-		// simplify graph
-
-		if (!m_nodes.getNodesCount())
-		{
-			return;
-		}
-
-		if (m_settings.m_need_insert_phantoms)
-		{
-			const std::vector<MathUtils::FastSet> cliques = bronKerboschDegeneracy();
-			if (!cliques.empty() && (cliques[0].size() <= CONSTRAINT_UINT_COUNT[(int)ConstraintType::PHANTOM_VERTICES]))
-			{
-				replaceVertices(cliques);
-				generatePhantomConstraintsBuffers();
-
-				clearEdges();
-				createEdges();
-			}
-		}
-
 		colorGraph();
+	}
 
+#pragma omp single
+	{
 		//for (int i = 0; i < m_nodes.getNodesCount(); ++i)
 		//{
 		//	const int node_color = m_nodes.getColor(i);
-		//	const std::vector<int> &neighbors = m_nodes.getNeighbors(i).getValues();
+		//	const std::vector<int>& neighbors = m_nodes.getNeighbors(i).getValues();
 		//	for (auto neighbour : neighbors)
 		//	{
-		//		if (node_color == m_nodes.getColor(neighbour))
+		//		if (node_color == m_nodes.getColor(neighbour) && node_color != NO_COLOR)
 		//		{
 		//			throw std::exception("Bad color");
 		//		}
 		//	}
 		//}
-	}
 
-	createMap();
+		createMap();
+	}
 }
 
 ConstraintsBuffers& ConstraintsGraph::getPhantomConstraints()
@@ -161,7 +165,7 @@ void ConstraintsGraph::bronKerboschPivot(const MathUtils::FastSet& clique, MathU
 	{
 		singleton.clear();
 		singleton.insert(subtracted_sets.getValues()[0]);
-		const MathUtils::FastSet &current_node_neighbors = m_nodes.getNeighbors(subtracted_sets.getValues()[0]);
+		const MathUtils::FastSet& current_node_neighbors = m_nodes.getNeighbors(subtracted_sets.getValues()[0]);
 
 		bronKerboschPivot(MathUtils::uniteSets(clique, singleton), MathUtils::intersectSets(candidates, current_node_neighbors),
 			MathUtils::intersectSets(duplicates, current_node_neighbors), results);
@@ -333,7 +337,7 @@ void ConstraintsGraph::assignColors(const std::vector<int>& conflicts, int max_d
 		BoolVector::BoolVector color_is_forbidden;
 		color_is_forbidden.resize(max_degree);
 		int neighbour_color = 0;
-		const std::vector<int> &node_neighbors = m_nodes.getNeighbors(node).getValues();
+		const std::vector<int>& node_neighbors = m_nodes.getNeighbors(node).getValues();
 
 		for (const auto neighbor : node_neighbors)
 		{
@@ -376,53 +380,57 @@ void ConstraintsGraph::detectConflicts(const std::vector<int>& conflicts, std::a
 
 void ConstraintsGraph::colorGraph()
 {
-	std::vector<int> conflicts;
-	int max_degree = 0;
-	for (int i = 0; i < m_nodes.getNodesCount(); ++i)
-	{
-		conflicts.push_back(i);
-		max_degree = std::max(max_degree, m_nodes.getNeighborsCount(i));
-	}
-
-	std::array<MathUtils::FastSet, THREADS_COUNT> new_conflicts;
-	for (int i = 0; i < THREADS_COUNT; ++i)
-	{
-		new_conflicts[i] = MathUtils::FastSet(m_nodes.getNodesCount());
-	}
-
-	bool no_conflicts = false;
-	MathUtils::FastSet united_conflicts(m_original_vertices_count + m_phantom_vertices_count);
-#pragma omp parallel
-	{
-		const int thread_id = omp_get_thread_num();
-
-		while (!no_conflicts)
-		{
-			assignColors(conflicts, max_degree, thread_id);
-			detectConflicts(conflicts, new_conflicts, thread_id);
-
 #pragma omp single
-			{
-				united_conflicts.clear();
-				for (auto& elem : new_conflicts)
-				{
-					united_conflicts = MathUtils::uniteSets(united_conflicts, elem);
-					elem.clear();
-				}
+	{
+		for (int i = 0; i < m_nodes.getNodesCount(); ++i)
+		{
+			m_conflicts.push_back(i);
+			m_max_degree = std::max(m_max_degree, m_nodes.getNeighborsCount(i));
+		}
 
-				conflicts = united_conflicts.getValues();
-				no_conflicts = conflicts.empty();
-			}
+		for (auto& elem : m_new_conflicts)
+		{
+			elem.updateMaxValue(m_nodes.getNodesCount());
 		}
 	}
 
-	m_colors_count = 0;
-	for (int i = 0; i < m_nodes.getNodesCount(); ++i)
+	const int thread_id = omp_get_thread_num();
+
+	while (!m_no_conflicts)
 	{
-		m_colors_count = std::max(m_colors_count, (int)m_nodes.getColor(i));
+		assignColors(m_conflicts, m_max_degree, thread_id);
+		detectConflicts(m_conflicts, m_new_conflicts, thread_id);
+
+#pragma omp single
+		{
+			MathUtils::FastSet united_conflicts(m_original_vertices_count + m_phantom_vertices_count);
+			for (auto& elem : m_new_conflicts)
+			{
+				united_conflicts = MathUtils::uniteSets(united_conflicts, elem);
+				elem.clear();
+			}
+
+			m_conflicts = united_conflicts.getValues();
+			m_no_conflicts = m_conflicts.empty();
+		}
 	}
 
-	++m_colors_count;
+#pragma omp barrier
+#pragma omp single
+	{
+		m_colors_count = 0;
+		for (int i = 0; i < m_nodes.getNodesCount(); ++i)
+		{
+			m_colors_count = std::max(m_colors_count, (int)m_nodes.getColor(i));
+		}
+
+		++m_colors_count;
+
+		m_conflicts.clear();
+
+		m_no_conflicts = false;
+		m_max_degree = 0;
+	}
 }
 
 void ConstraintsGraph::createMap()

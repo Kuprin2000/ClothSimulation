@@ -64,19 +64,26 @@ SimulationController::SimulationController(SimulationModel* model, SimulationVie
 
 void SimulationController::newFrame()
 {
-
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-	m_view->newFrameStart(ImGui::GetIO().DisplaySize.x / ImGui::GetIO().DisplaySize.y);
-	showInterface();
-	m_last_frame_time = ImGui::GetIO().DeltaTime;
+#pragma omp master
+	{
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		m_view->newFrameStart(ImGui::GetIO().DisplaySize.x / ImGui::GetIO().DisplaySize.y);
+		showInterface();
+		m_last_frame_time = ImGui::GetIO().DeltaTime;
+	}
+#pragma omp barrier
 
 	simulationStep(m_last_frame_time);
 
-	render();
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#pragma omp master
+	{
+		render();
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+#pragma omp barrier
 }
 
 void SimulationController::simulationStep(float time_delta)
@@ -97,9 +104,12 @@ void SimulationController::simulationStep(float time_delta)
 
 	const ExecutionStatistic& statistic = m_model->simulationStep(simulation_time_delta);
 
-	pushStatistic(statistic, time_delta);
-	++m_simulation_frame_number;
-	m_simulation_frame_number = m_simulation_frame_number % UINT64_MAX;
+#pragma omp single
+	{
+		pushStatistic(statistic, time_delta);
+		++m_simulation_frame_number;
+		m_simulation_frame_number = m_simulation_frame_number % UINT64_MAX;
+	}
 }
 
 void SimulationController::showInterface()
@@ -811,7 +821,7 @@ void SimulationController::showStatisticWindow()
 	ImGui::Text(text.c_str());
 
 	ImGui::End();
-	}
+}
 
 void SimulationController::pushStatistic(const ExecutionStatistic& statistic, float time_delta)
 {
