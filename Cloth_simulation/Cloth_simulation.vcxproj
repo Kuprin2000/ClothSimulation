@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\imgui;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs;C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs\imgui;C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <OpenMPSupport>true</OpenMPSupport>
       <FloatingPointModel>Strict</FloatingPointModel>
@@ -113,7 +113,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\SFML\lib;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\GLFW\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs\SFML\lib;C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs\GLFW\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glu32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -126,7 +126,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\imgui;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs;C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs\imgui;C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs\glad;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
@@ -138,12 +138,13 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\SFML\lib;C:\Users\a.kuprin\source\repos\Cloth_simulation\Cloth_simulation\libs\GLFW\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs\SFML\lib;C:\Users\a.kuprin\source\repos\ClothSimulation\Cloth_simulation\libs\GLFW\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glu32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="aligned_vector.h" />
+    <ClInclude Include="bool_vector.h" />
     <ClInclude Include="bounding_box.h" />
     <ClInclude Include="check_collisions.h" />
     <ClInclude Include="collider.h" />

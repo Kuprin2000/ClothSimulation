@@ -135,6 +135,9 @@
     <ClInclude Include="aligned_vector.h">
       <Filter>Model\Headers</Filter>
     </ClInclude>
+    <ClInclude Include="bool_vector.h">
+      <Filter>Utils\Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cloth.cpp">
