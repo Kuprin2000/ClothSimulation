@@ -175,7 +175,7 @@ public:
 		size_t total_bytes_count = 0u;
 		for (int i = 0; i < CONSTRAINT_TYPES_COUNT; ++i)
 		{
-			total_bytes_count += m_stored_constraints_per_type[i] * CONSTRAINT_BYTES_COUNT[i];
+			total_bytes_count += (size_t)m_stored_constraints_per_type[i] * (size_t)CONSTRAINT_BYTES_COUNT[i];
 		}
 
 		m_constraints_types.reserve(m_constraints_count);

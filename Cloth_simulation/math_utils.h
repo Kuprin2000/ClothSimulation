@@ -17,13 +17,12 @@ namespace MathUtils
 
 		FastSet(int max_value)
 		{
-			m_has_value.resize(max_value + 1);
+			m_has_value.resize((size_t)max_value + 1u);
 		}
 
-		FastSet(const std::vector<int>& values, int max_value)
+		FastSet(const std::vector<int>& values, int max_value): m_values(values)
 		{
-			m_values = values;
-			m_has_value.resize(max_value + 1);
+			m_has_value.resize((size_t)max_value + 1u);
 
 			for (auto elem : values)
 			{
@@ -43,7 +42,7 @@ namespace MathUtils
 
 		void updateMaxValue(int new_value)
 		{
-			m_has_value.resize(new_value + 1);
+			m_has_value.resize((size_t)new_value + 1u);
 		}
 
 		_NODISCARD const std::vector<int>& getValues() const

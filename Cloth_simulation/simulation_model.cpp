@@ -267,7 +267,10 @@ float SimulationModel::evaluateExternalForces(float time_delta)
 		max_movement = std::max({ max_movement, fabsf(movement[0]),fabsf(movement[1]),fabsf(movement[2]) });
 	}
 
-	m_cloth.syncPhantomVertices();
+#pragma omp parallel
+	{
+		m_cloth.syncPhantomVertices();
+	}
 
 	return max_movement;
 }
@@ -476,19 +479,13 @@ void SimulationModel::evaluateConstraints(float time_delta)
 		{
 			evaluateInternalConstraints(alpha_correction_coeff, iteration);
 
-#pragma omp single
-			{
-				m_cloth.syncOriginalsVertices();
-			}
+			m_cloth.syncOriginalsVertices();
 
 			evaluateCollisionConstraints(alpha_correction_coeff, iteration);
 
 			evaluateUserConstraints(alpha_correction_coeff, iteration);
 
-#pragma omp single
-			{
-				m_cloth.syncPhantomVertices();
-			}
+			m_cloth.syncPhantomVertices();
 		}
 
 		evaluateFriction(time_delta);
@@ -533,13 +530,11 @@ void SimulationModel::evaluateInternalConstraints(float alpha_correction_coeff, 
 		}
 	}
 
-#pragma omp single
+	tasks = &tasks_map.getTasks(tasks_map.getPartitionsCount() - 1);
+#pragma omp for
+	for (int i = 0; i < tasks->size(); ++i)
 	{
-		tasks = &tasks_map.getTasks(tasks_map.getPartitionsCount() - 1);
-		for (int i = 0; i < tasks->size(); ++i)
-		{
-			EvaluateConstraintsMultithread::evaluatePhantom(m_cloth, m_cloth_constraints_graph.getPhantomConstraints(), (*tasks)[i]);
-		}
+		EvaluateConstraintsMultithread::evaluatePhantom(m_cloth, m_cloth_constraints_graph.getPhantomConstraints(), (*tasks)[i]);
 	}
 }
 

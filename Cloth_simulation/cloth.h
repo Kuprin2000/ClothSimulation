@@ -259,22 +259,48 @@ public:
 
 	void syncOriginalsVertices()
 	{
-		const int real_vertices_count = getRealVerticesCount();
-		for (int i = real_vertices_count; i < m_vertices_data.m_host_and_original_vertices.size(); ++i)
+		// group of 64 vec3 because x86 cache line is 64 bytes 
+		int i = getRealVerticesCount() + omp_get_thread_num() * 64;
+		for (; i < m_vertices_data.m_host_and_original_vertices.size() - 63; i += THREADS_COUNT * 64)
+		{
+			for (int j = 0; j < 64; ++j)
+			{
+				m_vertices_data.m_coords[m_vertices_data.m_host_and_original_vertices[i + j]] = m_vertices_data.m_coords[i + j];
+				m_vertices_data.m_test_coords[m_vertices_data.m_host_and_original_vertices[i + j]] = m_vertices_data.m_test_coords[i + j];
+			}
+		}
+
+		while (i < m_vertices_data.m_host_and_original_vertices.size())
 		{
 			m_vertices_data.m_coords[m_vertices_data.m_host_and_original_vertices[i]] = m_vertices_data.m_coords[i];
 			m_vertices_data.m_test_coords[m_vertices_data.m_host_and_original_vertices[i]] = m_vertices_data.m_test_coords[i];
+			++i;
 		}
+
+#pragma omp barrier
 	}
 
 	void syncPhantomVertices()
 	{
-		const int real_vertices_count = getRealVerticesCount();
-		for (int i = real_vertices_count; i < m_vertices_data.m_host_and_original_vertices.size(); ++i)
+		// group of 64 vec3 because x86 cache line is 64 bytes 
+		int i = getRealVerticesCount() + omp_get_thread_num() * 64;
+		for (; i < m_vertices_data.m_host_and_original_vertices.size() - 63; i += THREADS_COUNT * 64)
+		{
+			for (int j = 0; j < 64; ++j)
+			{
+				m_vertices_data.m_coords[i + j] = m_vertices_data.m_coords[m_vertices_data.m_host_and_original_vertices[i + j]];
+				m_vertices_data.m_test_coords[i + j] = m_vertices_data.m_test_coords[m_vertices_data.m_host_and_original_vertices[i + j]];
+			}
+		}
+
+		while (i < m_vertices_data.m_host_and_original_vertices.size())
 		{
 			m_vertices_data.m_coords[i] = m_vertices_data.m_coords[m_vertices_data.m_host_and_original_vertices[i]];
 			m_vertices_data.m_test_coords[i] = m_vertices_data.m_test_coords[m_vertices_data.m_host_and_original_vertices[i]];
+			++i;
 		}
+
+#pragma omp barrier
 	}
 
 	// update normals
