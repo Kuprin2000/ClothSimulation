@@ -129,8 +129,8 @@ int main()
 	std::cout << "Average framerate " << controller.getAverageFramerate() << std::endl;
 	std::cout << "Average evaluate forces time " << controller.getAverageEvaluateForcesTime() << std::endl;
 	std::cout << "Total evaluate forces time " << controller.getTotalEvaluateForcesTime() << std::endl;
-	std::cout << "Average r-tree creation time " << controller.getAverageRTreeCreationTime() << std::endl;
-	std::cout << "Total r-tree creation time " << controller.getTotalRTreeCreationTime() << std::endl;
+	std::cout << "Average spatial tree creation time " << controller.getAverageTreesCreationTime() << std::endl;
+	std::cout << "Total spatial tree creation time " << controller.getTotalTreesCreationTime() << std::endl;
 	std::cout << "Average find collision candidates time " << controller.getAverageFindCollisionCandidatesTime() << std::endl;
 	std::cout << "Total find collision candidates time " << controller.getTotalFindCollisionCandidatesTime() << std::endl;
 	std::cout << "Average check collision candidates time " << controller.getAverageCheckCollisionCandidatesTime() << std::endl;

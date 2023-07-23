@@ -49,7 +49,7 @@ SimulationController::SimulationController(SimulationModel* model, SimulationVie
 
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
 	m_statistic.m_evaluate_forces_time.resize(STATISTIC_SIZE, 0u);
-	m_statistic.m_rtree_creation_time.resize(STATISTIC_SIZE, 0u);
+	m_statistic.m_trees_creation_time.resize(STATISTIC_SIZE, 0u);
 	m_statistic.m_find_collisions_candidates_time.resize(STATISTIC_SIZE, 0u);
 	m_statistic.m_check_collisions_candidates_time.resize(STATISTIC_SIZE, 0u);
 	m_statistic.m_collisions_constraints_graph_time.resize(STATISTIC_SIZE, 0u);
@@ -659,8 +659,6 @@ void SimulationController::showSimulationParamsWindow()
 		ImGui::InputFloat("Max cloth collision radius (sm)", &model_settings.m_max_collision_radius_for_cloth);
 	changed_parameters.m_some_params_changed |=
 		ImGui::InputFloat("Max collider collision radius (sm)", &model_settings.m_max_collision_radius_for_colliders);
-	changed_parameters.m_need_recreate_r_tree |= ImGui::InputInt("R-tree min children", &model_settings.m_r_tree_min);
-	changed_parameters.m_need_recreate_r_tree |= ImGui::InputInt("R-tree max children", &model_settings.m_r_tree_max);
 
 	ImGui::Text("Calculations");
 	changed_parameters.m_need_recreate_internal_constraints_graphs |= ImGui::InputInt("Preferred partitions count", &model_settings.m_preferred_partitions_count);
@@ -674,7 +672,6 @@ void SimulationController::showSimulationParamsWindow()
 			ImGui::InputFloat("Time step (s)", &m_settings.m_time_step);
 	}
 
-	changed_parameters.m_some_params_changed |= changed_parameters.m_need_recreate_r_tree;
 	changed_parameters.m_some_params_changed |= changed_parameters.m_need_recreate_internal_constraints_graphs;
 
 	if (changed_parameters.m_some_params_changed)
@@ -717,8 +714,6 @@ void SimulationController::showRunningSimulationWindow()
 		ImGui::InputFloat("Max cloth collision radius (sm)", &model_settings.m_max_collision_radius_for_cloth);
 	changed_parameters.m_some_params_changed |=
 		ImGui::InputFloat("Max collider collision radius (sm)", &model_settings.m_max_collision_radius_for_colliders);
-	changed_parameters.m_need_recreate_r_tree |= ImGui::InputInt("R-tree min children", &model_settings.m_r_tree_min);
-	changed_parameters.m_need_recreate_r_tree |= ImGui::InputInt("R-tree max children", &model_settings.m_r_tree_max);
 
 	ImGui::Text("Calculations");
 	changed_parameters.m_some_params_changed |=
@@ -730,8 +725,6 @@ void SimulationController::showRunningSimulationWindow()
 		changed_parameters.m_some_params_changed |=
 			ImGui::InputFloat("Time step (s)", &m_settings.m_time_step);
 	}
-
-	changed_parameters.m_some_params_changed |= changed_parameters.m_need_recreate_r_tree;
 
 	if (changed_parameters.m_some_params_changed)
 	{
@@ -779,7 +772,7 @@ void SimulationController::showStatisticWindow()
 		ImPlot::SetupAxis(ImAxis_::ImAxis_X1, "", ImPlotAxisFlags_::ImPlotAxisFlags_NoDecorations);
 		ImPlot::SetupAxis(ImAxis_::ImAxis_Y1, "Miliseconds", ImPlotAxisFlags_::ImPlotAxisFlags_AutoFit);
 		ImPlot::PlotLineG("Evaluate forces", sampleUin16Stats, m_statistic.m_evaluate_forces_time.data(), STATISTIC_SIZE);
-		ImPlot::PlotLineG("Create R-tree", sampleUin16Stats, m_statistic.m_rtree_creation_time.data(), STATISTIC_SIZE);
+		ImPlot::PlotLineG("Create spatial tree", sampleUin16Stats, m_statistic.m_trees_creation_time.data(), STATISTIC_SIZE);
 		ImPlot::PlotLineG("Find collisions candidates", sampleUin16Stats, m_statistic.m_find_collisions_candidates_time.data(), STATISTIC_SIZE);
 		ImPlot::PlotLineG("Check collisions candidates", sampleUin16Stats, m_statistic.m_check_collisions_candidates_time.data(), STATISTIC_SIZE);
 		ImPlot::PlotLineG("Collisions graph", sampleUin16Stats, m_statistic.m_collisions_constraints_graph_time.data(), STATISTIC_SIZE);
@@ -819,7 +812,7 @@ void SimulationController::pushStatistic(const ExecutionStatistic& statistic, fl
 
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
 	m_statistic.m_evaluate_forces_time[STATISTIC_INDEX] = statistic.m_evaluate_forces_time;
-	m_statistic.m_rtree_creation_time[STATISTIC_INDEX] = statistic.m_rtree_creation_time;
+	m_statistic.m_trees_creation_time[STATISTIC_INDEX] = statistic.m_trees_creation_time;
 	m_statistic.m_find_collisions_candidates_time[STATISTIC_INDEX] = statistic.m_find_collisions_candidates_time;
 	m_statistic.m_check_collisions_candidates_time[STATISTIC_INDEX] = statistic.m_check_collisions_candidates_time;
 	m_statistic.m_collisions_constraints_graph_time[STATISTIC_INDEX] = statistic.m_collisions_constraints_graph_time;

@@ -164,11 +164,11 @@ const ExecutionStatistic& SimulationModel::simulationStep(float time_delta)
 	m_start_time = m_end_time;
 #endif
 
-	generateRTree(m_max_movement);
+	generateTrees(m_max_movement);
 
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
 	m_end_time = std::chrono::high_resolution_clock::now();
-	m_statistic.m_rtree_creation_time =
+	m_statistic.m_trees_creation_time =
 		(uint16_t)std::chrono::duration_cast<std::chrono::milliseconds>(m_end_time - m_start_time).count();
 	m_start_time = m_end_time;
 #endif
@@ -277,8 +277,8 @@ float SimulationModel::evaluateExternalForces(float time_delta)
 
 void SimulationModel::findCollisionsCandidates()
 {
-	const RTree::RTreeNodes& r_tree_nodes = m_r_tree.getNodes();
-	const std::vector<int>& cloth_triangle_nodes = m_r_tree.getClothPrimitivesNodes();
+	const AlignedVector::AlignedVector<Node>& cloth_triangles = m_cloth_tree.getPrimitivesNodes();
+	const AlignedVector::AlignedVector<Node>& collider_triangles = m_collider_tree.getPrimitivesNodes();
 
 	std::array<ConstraintsBuffers, THREADS_COUNT> tmp_buffers;
 
@@ -287,23 +287,23 @@ void SimulationModel::findCollisionsCandidates()
 	{
 		const int thread_id = omp_get_thread_num();
 
-		for (int i = thread_id; i < cloth_triangle_nodes.size(); i += THREADS_COUNT)
+		for (int i = thread_id; i < cloth_triangles.size(); i += THREADS_COUNT)
 		{
-			const int current_triangle_id = r_tree_nodes.getPrimitiveID(cloth_triangle_nodes[i]);
-			const std::vector<int> collided_triangles = m_r_tree.findCollisionsWithBndBox(r_tree_nodes.getBndBox(cloth_triangle_nodes[i]));
+			const int current_triangle_id = cloth_triangles[i].m_primitive_id;
+			const std::vector<int> collided_cloth_triangles = m_cloth_tree.findCollisionsWithBndBox(cloth_triangles[i].m_bnd_box);
+			const std::vector<int> collided_collider_triangles = m_collider_tree.findCollisionsWithBndBox(cloth_triangles[i].m_bnd_box);
 
-			for (const auto collided_triangle_node : collided_triangles)
+			for (const auto collided_cloth_triangle : collided_cloth_triangles)
 			{
-				const int collided_triangle_id = r_tree_nodes.getPrimitiveID(collided_triangle_node);
+				if (collided_cloth_triangle > current_triangle_id)
+				{
+					createSelfCollisionCandidates(current_triangle_id, collided_cloth_triangle, tmp_buffers[thread_id]);
+				}
+			}
 
-				if (r_tree_nodes.getObjectType(collided_triangle_node) == RTree::ObjectType::CLOTH && (current_triangle_id < collided_triangle_id))
-				{
-					createSelfCollisionCandidates(current_triangle_id, collided_triangle_id, tmp_buffers[thread_id]);
-				}
-				if (r_tree_nodes.getObjectType(collided_triangle_node) == RTree::ObjectType::COLLIDER)
-				{
-					createColliderCollisionCandidate(current_triangle_id, collided_triangle_id, tmp_buffers[thread_id]);
-				}
+			for (const auto collided_collider_triangle : collided_collider_triangles)
+			{
+				createColliderCollisionCandidate(current_triangle_id, collided_collider_triangle, tmp_buffers[thread_id]);
 			}
 		}
 	}

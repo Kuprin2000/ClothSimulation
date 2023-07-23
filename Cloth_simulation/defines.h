@@ -2,7 +2,7 @@
 
 // number of threads to use
 
- #define THREADS_COUNT 8
+ #define THREADS_COUNT 4
 
 // if we use V-sync
 

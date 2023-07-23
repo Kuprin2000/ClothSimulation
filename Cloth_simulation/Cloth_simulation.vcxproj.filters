@@ -138,6 +138,9 @@
     <ClInclude Include="bool_vector.h">
       <Filter>Utils\Headers</Filter>
     </ClInclude>
+    <ClInclude Include="linear_bvh.h">
+      <Filter>Model\Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cloth.cpp">
@@ -211,6 +214,9 @@
     </ClCompile>
     <ClCompile Include="libs\implot\implot_items.cpp">
       <Filter>Implot</Filter>
+    </ClCompile>
+    <ClCompile Include="linear_bvh.cpp">
+      <Filter>Model\Sources</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

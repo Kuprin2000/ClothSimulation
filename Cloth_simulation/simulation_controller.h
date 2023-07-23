@@ -72,9 +72,9 @@ public:
 		return getAverageValue(m_statistic.m_evaluate_forces_time);
 	}
 
-	_NODISCARD uint64_t getAverageRTreeCreationTime() const
+	_NODISCARD uint64_t getAverageTreesCreationTime() const
 	{
-		return getAverageValue(m_statistic.m_rtree_creation_time);
+		return getAverageValue(m_statistic.m_trees_creation_time);
 	}
 
 	_NODISCARD uint64_t getAverageFindCollisionCandidatesTime() const
@@ -122,9 +122,9 @@ public:
 		return getTotalValue(m_statistic.m_evaluate_forces_time);
 	}
 
-	_NODISCARD uint64_t getTotalRTreeCreationTime() const
+	_NODISCARD uint64_t getTotalTreesCreationTime() const
 	{
-		return getTotalValue(m_statistic.m_rtree_creation_time);
+		return getTotalValue(m_statistic.m_trees_creation_time);
 	}
 
 	_NODISCARD uint64_t getTotalFindCollisionCandidatesTime() const
@@ -248,8 +248,6 @@ private:
 		model_settings.m_gravity = std::clamp(model_settings.m_gravity, -1000.0f, 1000.0f);
 		model_settings.m_max_collision_radius_for_cloth = std::clamp(model_settings.m_max_collision_radius_for_cloth, 0.0f, 10.0f);
 		model_settings.m_max_collision_radius_for_colliders = std::clamp(model_settings.m_max_collision_radius_for_colliders, 0.0f, 10.0f);
-		model_settings.m_r_tree_min = std::clamp(model_settings.m_r_tree_min, 1, 50);
-		model_settings.m_r_tree_max = std::clamp(model_settings.m_r_tree_max, model_settings.m_r_tree_min * 2, 100);
 		model_settings.m_preferred_partitions_count = std::clamp(model_settings.m_preferred_partitions_count, 1, 50);
 		model_settings.m_iterations_count = std::clamp(model_settings.m_iterations_count, 1, 100);
 		m_settings.m_time_step = std::clamp(m_settings.m_time_step, 0.001f, 1.0f);
@@ -299,7 +297,7 @@ private:
 		bool m_use_real_time = false;
 		float m_time_step = 1.0f / 100.0f;
 
-		const int m_first_frames_count = 5;
+		const int m_first_frames_count = 0;
 		const float m_first_frames_time_step = 0.001f;
 
 		const float m_camera_linear_speed = 150.0f;
@@ -350,7 +348,7 @@ private:
 #if defined(MEASURE_TIME) || defined(PERFORMANCE_TEST)
 		// miliseconds
 		std::vector<uint16_t> m_evaluate_forces_time;
-		std::vector<uint16_t> m_rtree_creation_time;
+		std::vector<uint16_t> m_trees_creation_time;
 		std::vector<uint16_t> m_find_collisions_candidates_time;
 		std::vector<uint16_t> m_check_collisions_candidates_time;
 		std::vector<uint16_t> m_collisions_constraints_graph_time;

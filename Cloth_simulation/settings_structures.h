@@ -2,9 +2,6 @@
 
 struct ModelSettings
 {
-	int m_r_tree_min = 10;								// minimum number of children of r-tree node
-	int m_r_tree_max = 20;								// maximum number of children of r-tree node
-
 	float m_speed_damping_coefficient = 0.99f;			// damping coefficient of vertices speeds
 
 	float m_gravity = 980.0f;							// gravitational acceleration

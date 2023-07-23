@@ -8,12 +8,12 @@ class BoundingBox
 public:
 	void setVoid()
 	{
-		m_data[0] = 1.0f;
-		m_data[1] = -1.0f;
-		m_data[2] = 1.0f;
-		m_data[3] = -1.0f;
-		m_data[4] = 1.0f;
-		m_data[5] = -1.0f;
+		m_data[0] = FLT_MAX;
+		m_data[1] = -FLT_MAX;
+		m_data[2] = FLT_MAX;
+		m_data[3] = -FLT_MAX;
+		m_data[4] = FLT_MAX;
+		m_data[5] = -FLT_MAX;
 		m_data[6] = 0.0f;
 	}
 
@@ -138,5 +138,5 @@ public:
 
 private:
 	// x_min, x_max, y_min, y_max, z_min, z_max, gap, volume
-	float m_data[7] = { 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 0.0f };
+	float m_data[7] = { FLT_MAX, -FLT_MAX, FLT_MAX, -FLT_MAX, FLT_MAX, -FLT_MAX, 0.0f };
 };

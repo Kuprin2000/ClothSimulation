@@ -417,4 +417,9 @@ namespace MathUtils
 			}
 		}
 	}
+
+	inline int sign(int value)
+	{
+		return (0 < value) - (value < 0);
+	}
 }

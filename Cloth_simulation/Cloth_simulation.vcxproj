@@ -157,6 +157,7 @@
     <ClInclude Include="evaluate_friction.h" />
     <ClInclude Include="libs\implot\implot.h" />
     <ClInclude Include="libs\implot\implot_internal.h" />
+    <ClInclude Include="linear_bvh.h" />
     <ClInclude Include="simulation_controller.h" />
     <ClInclude Include="copy_utils.h" />
     <ClInclude Include="indices_utils.h" />
@@ -186,6 +187,7 @@
     <ClCompile Include="libs\implot\implot.cpp" />
     <ClCompile Include="libs\implot\implot_demo.cpp" />
     <ClCompile Include="libs\implot\implot_items.cpp" />
+    <ClCompile Include="linear_bvh.cpp" />
     <ClCompile Include="math_utils.cpp" />
     <ClCompile Include="primitives_ownership_utils.cpp" />
     <ClCompile Include="simulation_controller.cpp" />
