@@ -9,12 +9,12 @@ namespace BoolVector
 	public:
 		void reserve(size_t size)
 		{
-			m_data.reserve(size / 8u + 1u);
+			m_data.reserve(size / 8u + bool(size % 8));
 		}
 
 		void resize(size_t size)
 		{
-			m_data.resize(size / 8u + 1u);
+			m_data.resize(size / 8u + bool(size % 8));
 			m_stored_values = size;
 		}
 

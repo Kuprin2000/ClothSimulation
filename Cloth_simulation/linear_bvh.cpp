@@ -14,19 +14,24 @@ void LinearBVH::insertTriangles(const AlignedVector::AlignedVector<glm::vec3>& v
 		centers[i] = (vertices_coords[indices[0]] + vertices_coords[indices[1]] + vertices_coords[indices[2]]) * coeff_1;
 	}
 
-	float max_delta = 0.0f;
 	glm::vec3 min_values = { FLT_MAX, FLT_MAX, FLT_MAX };
 	for (const auto& elem : centers)
 	{
-		max_delta = std::max({ max_delta , fabs(elem.x), fabs(elem.y), fabs(elem.z) });
 		min_values = { std::min(min_values.x, elem.x), std::min(min_values.y, elem.y), std::min(min_values.z, elem.z) };
 	}
-	float coeff_2 = 0.5f / max_delta;
 
-	for (int i = 0; i < centers.size(); ++i)
+	float max_delta = 0.0f;
+	for (auto& elem : centers)
 	{
-		centers[i] -= min_values;
-		centers[i] *= coeff_2;
+		elem -= min_values;
+		max_delta = std::max({ max_delta , fabs(elem.x), fabs(elem.y), fabs(elem.z) });
+	}
+
+	const float coeff = 1.0f / max_delta;
+
+	for (auto& elem : centers)
+	{
+		elem *= coeff;
 	}
 
 	const AlignedVector::AlignedVector<PointWithCode> sorted_vertices = sortMorton(centers);
@@ -49,19 +54,24 @@ void LinearBVH::insertMovingTriangles(const AlignedVector::AlignedVector<glm::ve
 		centers[i] *= coeff_1;
 	}
 
-	float max_delta = 0.0f;
 	glm::vec3 min_values = { FLT_MAX, FLT_MAX, FLT_MAX };
 	for (const auto& elem : centers)
 	{
-		max_delta = std::max({ max_delta , fabs(elem.x), fabs(elem.y), fabs(elem.z) });
 		min_values = { std::min(min_values.x, elem.x), std::min(min_values.y, elem.y), std::min(min_values.z, elem.z) };
 	}
-	float coeff_2 = 0.5f / max_delta;
 
-	for (int i = 0; i < centers.size(); ++i)
+	float max_delta = 0.0f;
+	for (auto& elem : centers)
 	{
-		centers[i] -= min_values;
-		centers[i] *= coeff_2;
+		elem -= min_values;
+		max_delta = std::max({ max_delta , fabs(elem.x), fabs(elem.y), fabs(elem.z) });
+	}
+
+	const float coeff = 1.0f / max_delta;
+
+	for (auto& elem : centers)
+	{
+		elem *= coeff;
 	}
 
 	const AlignedVector::AlignedVector<PointWithCode> sorted_vertices = sortMorton(centers);

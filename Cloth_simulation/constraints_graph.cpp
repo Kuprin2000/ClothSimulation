@@ -98,29 +98,68 @@ std::vector<MathUtils::FastSet> ConstraintsGraph::bronKerboschDegeneracy()
 	// Algorithm for Maximal Clique Enumeration Using GPUs"
 
 	const std::vector<int> sorted_nodes = sortDegeneracy();
-	MathUtils::FastSet P(sorted_nodes, m_nodes.getNodesCount());
-	MathUtils::FastSet X(m_nodes.getNodesCount());
-	MathUtils::FastSet singleton(m_nodes.getNodesCount());
-	std::vector<MathUtils::FastSet> result;
+	std::array<std::vector<MathUtils::FastSet>, THREADS_COUNT> results;
 
-	for (const auto node : sorted_nodes)
+#pragma omp parallel
 	{
-		singleton = { node };
-		P.erase(node);
+		const int thread_id = omp_get_thread_num();
 
-		bronKerboschPivot(singleton, MathUtils::intersectSets(P, m_nodes.getNeighbors(node)),
-			MathUtils::intersectSets(X, m_nodes.getNeighbors(node)), result);
+		const int nodes_per_thread = ceilf((float)m_nodes.getNodesCount() / (float)omp_get_num_threads());
+		const int start = nodes_per_thread * thread_id;
+		const int end = std::min(start + nodes_per_thread, (int)sorted_nodes.size());
 
-		X.insert(node);
+		MathUtils::FastSet P(m_nodes.getNodesCount());
+		MathUtils::FastSet X(m_nodes.getNodesCount());
+		MathUtils::FastSet singleton(m_nodes.getNodesCount());
+
+		for (int i = start + 1; i < (int)sorted_nodes.size(); ++i)
+		{
+			P.insert(sorted_nodes[i]);
+		}
+
+		for (int i = 0; i < start; ++i)
+		{
+			X.insert(sorted_nodes[i]);
+		}
+
+		for (int i = start; i < end; ++i)
+		{
+			if (i)
+			{
+				singleton.erase(sorted_nodes[i - 1]);
+			}
+
+			singleton.insert(sorted_nodes[i]);
+
+			bronKerboschPivot(singleton, MathUtils::intersectSets(P, m_nodes.getNeighbors(sorted_nodes[i])),
+				MathUtils::intersectSets(X, m_nodes.getNeighbors(sorted_nodes[i])), results[thread_id]);
+
+			P.erase(sorted_nodes[i]);
+			X.insert(sorted_nodes[i]);
+		}
 	}
 
-	std::sort(result.begin(), result.end(),
+	int total_size = 0;
+	for (int i = 0; i < THREADS_COUNT; ++i)
+	{
+		total_size += (int)results[i].size();
+	}
+
+	std::vector<MathUtils::FastSet> final_result;
+	final_result.reserve(total_size);
+
+	for (int i = 0; i < THREADS_COUNT; ++i)
+	{
+		final_result.insert(final_result.end(), results[i].begin(), results[i].end());
+	}
+
+	std::sort(final_result.begin(), final_result.end(),
 		[](const MathUtils::FastSet& a, const MathUtils::FastSet& b) -> bool
 		{
 			return a.size() > b.size();
 		});
 
-	return result;
+	return final_result;
 }
 
 void ConstraintsGraph::bronKerboschPivot(const MathUtils::FastSet& clique, MathUtils::FastSet candidates,
@@ -146,7 +185,7 @@ void ConstraintsGraph::bronKerboschPivot(const MathUtils::FastSet& clique, MathU
 	const std::vector<int>& united_sets_values = united_sets.getValues();
 	for (auto iter = united_sets_values.begin(); iter != united_sets_values.end(); ++iter)
 	{
-		intersected_sets = MathUtils::intersectSets(candidates, m_nodes.getNeighbors(*iter));
+		intersected_sets.fromIntersection(candidates, m_nodes.getNeighbors(*iter));
 		if ((int)intersected_sets.size() > max_size)
 		{
 			max_size = (int)intersected_sets.size();
@@ -154,21 +193,22 @@ void ConstraintsGraph::bronKerboschPivot(const MathUtils::FastSet& clique, MathU
 		}
 	}
 
-	MathUtils::FastSet subtracted_sets = MathUtils::subtractSet(candidates, m_nodes.getNeighbors(pivot));
+	MathUtils::FastSet subtracted_sets(m_nodes.getNodesCount());
+	subtracted_sets.fromSubtraction(candidates, m_nodes.getNeighbors(pivot));
 
 	MathUtils::FastSet singleton(m_nodes.getNodesCount());
 	while (subtracted_sets.size())
 	{
 		singleton.clear();
 		singleton.insert(subtracted_sets.getValues()[0]);
-		const MathUtils::FastSet &current_node_neighbors = m_nodes.getNeighbors(subtracted_sets.getValues()[0]);
+		const MathUtils::FastSet& current_node_neighbors = m_nodes.getNeighbors(subtracted_sets.getValues()[0]);
 
 		bronKerboschPivot(MathUtils::uniteSets(clique, singleton), MathUtils::intersectSets(candidates, current_node_neighbors),
 			MathUtils::intersectSets(duplicates, current_node_neighbors), results);
 
-		candidates = MathUtils::subtractSet(candidates, singleton);
-		duplicates = MathUtils::uniteSets(duplicates, singleton);
-		subtracted_sets = MathUtils::subtractSet(candidates, m_nodes.getNeighbors(pivot));
+		candidates.erase(singleton.getValues()[0]);
+		duplicates.insert(singleton.getValues()[0]);
+		subtracted_sets.fromSubtraction(candidates, m_nodes.getNeighbors(pivot));
 	}
 }
 

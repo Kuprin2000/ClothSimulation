@@ -20,7 +20,7 @@ namespace MathUtils
 			m_has_value.resize((size_t)max_value + 1u);
 		}
 
-		FastSet(const std::vector<int>& values, int max_value): m_values(values)
+		FastSet(const std::vector<int>& values, int max_value) : m_values(values)
 		{
 			m_has_value.resize((size_t)max_value + 1u);
 
@@ -30,9 +30,79 @@ namespace MathUtils
 			}
 		}
 
+		void fromUnion(const FastSet& set_a, const FastSet& set_b)
+		{
+			const int new_size =
+				(int)std::max(set_a.m_has_value.size(), set_b.m_has_value.size());
+			m_has_value.resize((size_t)new_size);
+
+			m_values.clear();
+			m_has_value.fill(false);
+
+			const std::vector<int>& set_a_values = set_a.getValues();
+			for (auto elem : set_a_values)
+			{
+				m_values.push_back(elem);
+				m_has_value.setValue(true, elem);
+			}
+
+			const std::vector<int>& set_b_values = set_b.getValues();
+			for (auto elem : set_b_values)
+			{
+				if (!m_has_value[elem])
+				{
+					m_values.push_back(elem);
+					m_has_value.setValue(true, elem);
+				}
+			}
+		}
+
+		void fromIntersection(const FastSet& set_a, const FastSet& set_b)
+		{
+			const int new_size =
+				(int)std::max(set_a.m_has_value.size(), set_b.m_has_value.size());
+			m_has_value.resize((size_t)new_size);
+
+			m_values.clear();
+			m_has_value.fill(false);
+
+			const FastSet& max_set = (set_a.size() > set_b.size()) ? set_a : set_b;
+			const FastSet& min_set = (set_a.size() > set_b.size()) ? set_b : set_a;
+
+			const std::vector<int>& min_set_values = min_set.getValues();
+			for (auto elem : min_set_values)
+			{
+				if (max_set.contains(elem) && !m_has_value[elem])
+				{
+					m_values.push_back(elem);
+					m_has_value.setValue(true, elem);
+				}
+			}
+		}
+
+		void fromSubtraction(const FastSet& set_a, const FastSet& set_b)
+		{
+			const int new_size =
+				(int)std::max(set_a.m_has_value.size(), set_b.m_has_value.size());
+			m_has_value.resize((size_t)new_size);
+
+			m_values.clear();
+			m_has_value.fill(false);
+
+			const std::vector<int>& set_a_values = set_a.getValues();
+			for (auto elem : set_a_values)
+			{
+				if (!set_b.contains(elem))
+				{
+					m_values.push_back(elem);
+					m_has_value.setValue(true, elem);
+				}
+			}
+		}
+
 		_NODISCARD int getMaxValue() const
 		{
-			return (int)m_has_value.size();
+			return (int)m_has_value.size() - 1;
 		}
 
 		_NODISCARD size_t size() const
@@ -115,7 +185,7 @@ namespace MathUtils
 
 		FastSet result(max_set.getValues(), std::max(set_a.getMaxValue(), set_b.getMaxValue()));
 
-		const std::vector<int> min_set_values = min_set.getValues();
+		const std::vector<int>& min_set_values = min_set.getValues();
 		for (auto elem : min_set_values)
 		{
 			result.insert(elem);
@@ -131,7 +201,7 @@ namespace MathUtils
 
 		FastSet result(std::max(set_a.getMaxValue(), set_b.getMaxValue()));
 
-		const std::vector<int> min_set_values = min_set.getValues();
+		const std::vector<int>& min_set_values = min_set.getValues();
 		for (auto elem : min_set_values)
 		{
 			if (max_set.contains(elem))
@@ -147,7 +217,7 @@ namespace MathUtils
 	{
 		FastSet result(std::max(set_a.getMaxValue(), set_b.getMaxValue()));
 
-		const std::vector<int> set_a_values = set_a.getValues();
+		const std::vector<int>& set_a_values = set_a.getValues();
 		for (auto elem : set_a_values)
 		{
 			if (!set_b.contains(elem))
